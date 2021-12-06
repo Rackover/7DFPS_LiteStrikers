@@ -8,38 +8,37 @@ const app = express();
 const server = createServer(app);
 const wss = new WebSocket.Server({ server });
 
-const port = 1234;
-const backyardSize = 10;
+const port = 1235;
+const backyardSize = 100;
 const dropAckTimeout = 1;
-const spawnDistance = 1;
-const birdCount = 20;
-const spotSafeDistance = 4;
-const flyTime = 2;
-const verboseBirds = false;
+const spawnDistance = 10;
+
+const loadouts
+{
+	LMG:1
+	TRIPLE:2,
+	HOMING:3
+}
 
 const PROTOCOL_MOVESTATE = "MOV";
-const PROTOCOL_CATCH = "CAT";
-const PROTOCOL_BIRD_MOVEMENT = "BRD";
 const PROTOCOL_UPDATE_SCORE = "SCO";
 const PROTOCOL_STATE = "STT";
 const PROTOCOL_ACKNOWLEDGE_STATE = "AKS";
 const PROTOCOL_KILL_PLAYER = "KIL";
+const PROTOCOL_SHOOTSTATE = "SHT";
+const PROTOCOL_SET_LOADOUT = "LDT";
 const PROTOCOL_MEOW = "MEW";
 
 const handlers = {};
 handlers[PROTOCOL_MOVESTATE] = send_position_to_everyone_but_me;
-handlers[PROTOCOL_CATCH]= send_caught_to_everyone_but_me_and_increase_score;
-handlers[PROTOCOL_BIRD_MOVEMENT]= function(me, ws, data){ log("someone ("+me.id+") sent me a PROTOCOL_BIRD_MOVEMENT ??");};
 handlers[PROTOCOL_UPDATE_SCORE]= function(me, ws, data){ log("someone ("+me.id+") sent me a PROTOCOL_UPDATE_SCORE ??");};
 handlers[PROTOCOL_ACKNOWLEDGE_STATE]=  acknowledge_client;
 handlers[PROTOCOL_STATE]= function(me, ws, data){ log("someone ("+me.id+") sent me a PROTOCOL_STATE ??");};
 handlers[PROTOCOL_KILL_PLAYER]= function(me, ws, data){ log("someone ("+me.id+") sent me a PROTOCOL_KILL_PLAYER ??");};
 handlers[PROTOCOL_MEOW]= send_meow_to_everyone;
+handlers[PROTOCOL_SHOOTSTATE]= send_shoot_to_everyone_but_me;
+handlers[PROTOCOL_SET_LOADOUT]= switch_my_loadout;
 
-
-const birdSpots = require('./birdspots');
-
-let birds = {};
 let clients = {};
 let idCounter = 0;
 let clientsAwaitingAck = [];
@@ -162,8 +161,8 @@ function make_client(id, ws){
         id:id,
         socket:ws,
         position: get_spawnpoint(),
-        rotation: "0 0 0 0",
-        isSneaking: false
+        rotation: [0, 0, 0, 0],
+        loadout: Math.floor(Math.random()*loadouts.length)
     };
 }
 
@@ -194,14 +193,6 @@ function send_caught_to_everyone_but_me_and_increase_score(me, ws, data){
     try{
         log("Client "+me.id+" caught bird "+data);
         
-        let birdId = parseInt(data);
-        
-        if (!birds[birdId]){
-            return;
-        }
-        
-        birds[birdId].kill();
-        delete birds[birdId];
         
         if (!clientsScores[me.id]){
             clientsScores[me.id] = 0;
@@ -212,8 +203,7 @@ function send_caught_to_everyone_but_me_and_increase_score(me, ws, data){
         for(client_id in clients){            
             clients[client_id].socket.send(PROTOCOL_UPDATE_SCORE+JSON.stringify({
                 clientId:me.id,
-                newScore: clientsScores[me.id],
-                deadBird: birdId
+                newScore: clientsScores[me.id]
             }));
         }
     }
@@ -221,19 +211,24 @@ function send_caught_to_everyone_but_me_and_increase_score(me, ws, data){
         log(e);
     }
     
-    setTimeout(function(){
-        
-        const bird = make_bird();
-        birds[bird.id] = bird;
-        log("Created bird "+bird.id);
-        
-    }, 4000);
 }
 
 function send_meow_to_everyone(me, ws, data){
-    for(client_id in clients){            
+    for(client_id in clients)
+	{            
         clients[client_id].socket.send(PROTOCOL_MEOW+me.id);
     }
+}
+
+function send_shoot_to_everyone_but_me(me, ws, data)
+{
+	
+}
+
+function switch_my_loadout(me, ws, data)
+{
+	const loadout = data.loadout;
+	
 }
 
 function send_kill_player(id){
