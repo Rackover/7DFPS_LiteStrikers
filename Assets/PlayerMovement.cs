@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerMovement : MonoBehaviour {
+public class PlayerMovement : MonoBehaviour
+{
     public Player playerScript;
 
     public Vector2 VirtualJoystick => virtualStick;
@@ -15,6 +16,14 @@ public class PlayerMovement : MonoBehaviour {
     [SerializeField] private float boostAcceleration = 5f;
     [SerializeField] private float rotationSpeed = 180f;
     [SerializeField] TrailRenderer trail;
+    [SerializeField] private float frictionAmount = 0.1f;
+    [SerializeField] private float velocityReductionPerSpeed = 1.2f;
+
+    public float Pitch101 { private set; get; }
+
+    public float VelocityMagnitude => velocity.magnitude;
+
+    public float Speed => currentBoost;
 
     public float SpeedAmount => currentBoost / maxBoost;
 
@@ -24,6 +33,8 @@ public class PlayerMovement : MonoBehaviour {
 
     Vector3 velocity = Vector3.zero;
 
+    float verticalGravityVelocity = 0f;
+    
     float currentBoost = 0f;
 
     bool isBoosting;
@@ -31,7 +42,8 @@ public class PlayerMovement : MonoBehaviour {
     Vector2 virtualStick;
 
     // Start is called before the first frame update
-    void Start() {
+    void Start()
+    {
         if (IsLocal)
         {
             Cursor.lockState = CursorLockMode.Confined;
@@ -39,30 +51,16 @@ public class PlayerMovement : MonoBehaviour {
     }
 
     // Update is called once per frame
-    void Update() {
+    void Update()
+    {
         if (IsLocal)
         {
             Cursor.visible = false;
             //var inputMouse = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"));
             //transform.Rotate(transform.up * inputMouse.x * Time.deltaTime * mouseSensitivity * 1.5f);
 
-            var mousePosition = Input.mousePosition;
-            isBoosting = Input.GetMouseButton(0);
-
-            if (Game.i.IsMobile)
-            {
-                if (Input.touchCount > 0)
-                {
-                    var touch = Input.GetTouch(0);
-                    mousePosition = touch.position;
-
-                    isBoosting = true;
-                }
-                else
-                {
-                    isBoosting = false;
-                }
-            }
+            var mousePosition = Game.i.MousePosition;
+            isBoosting = Game.i.IsPressing;
 
             virtualStick = new Vector2(mousePosition.x / Screen.width, mousePosition.y / Screen.height) * 2 - Vector2.one;
 
@@ -78,43 +76,60 @@ public class PlayerMovement : MonoBehaviour {
     }
 
 
-    private void FixedUpdate() {
+    private void FixedUpdate()
+    {
         if (IsLocal)
         {
             if (transform.position.y < killZ)
             {
                 Debug.Log($"Kill Z was hit, resetting position!");
-                transform.position = new Vector3(5f, 2f, 5F);
+                transform.position = new Vector3(5f, 20f, 5F);
                 velocity = Vector3.zero;
+                verticalGravityVelocity = 0f;
             }
             else
             {
-                velocity += transform.forward * currentBoost * Time.deltaTime;
+                velocity += transform.forward * currentBoost;
 
                 // Clamping XRot to avoid full up/down
-                var localRot = transform.eulerAngles;
-                if (localRot.x < 260f)
+                var localRot = Mathf.Repeat(transform.eulerAngles.x + 180f, 360) - 180f;
+                float yStick = virtualStick.y;
+                if (localRot > 85f)
                 {
                     // We're going down
-                    if (localRot.x > 85f)
-                    {
-                        virtualStick.y = Mathf.Max(virtualStick.y, 0f);
-                    }
+                    yStick = Mathf.Max(virtualStick.y, 0f);
                 }
-                else if (localRot.x > 270f)
+                else if (localRot < -85f)
                 {
-                    if (localRot.x < 275f)
-                    {
-                        virtualStick.y = Mathf.Min(virtualStick.y, 0f);
-                    }
+                    yStick = Mathf.Min(virtualStick.y, 0f);
                 }
 
-                transform.forward = Vector3.Lerp(transform.forward, transform.TransformDirection(virtualStick), rotationSpeed * Time.deltaTime * (currentBoost / maxBoost));
+                Vector2 fixedStick = new Vector2(
+                    virtualStick.x * (1f - Mathf.Abs(localRot) / 90f),
+                    yStick
+                );
 
+                Pitch101 = localRot / 90f;
 
-                velocity *= 0.95f; // Friction
+                transform.forward = Vector3.Lerp(transform.forward, transform.TransformDirection(fixedStick), rotationSpeed * Time.deltaTime * (currentBoost / maxBoost));
 
-                velocity += Vector3.down * gravity * Mathf.Clamp01(1f - SpeedAmount * 0.75f) * Time.deltaTime;
+                // Friction
+                velocity -= velocity.normalized * Mathf.Pow(velocity.magnitude, velocityReductionPerSpeed) * frictionAmount * Time.deltaTime;
+
+                if (isBoosting)
+                {
+                    velocity += Vector3.down * gravity
+                        * Mathf.Clamp01(1f - SpeedAmount * 0.75f) // Reduce gravity from speed
+                        * Mathf.Abs(Pitch101)  // Reduce gravity from pitch
+                        * Time.deltaTime;
+
+                    verticalGravityVelocity = Mathf.Max(0f, verticalGravityVelocity - 80f* Time.deltaTime);
+                }
+                else
+                {
+                    verticalGravityVelocity += gravity * Time.deltaTime;
+                }
+
             }
 
             ApplyMovementVector();
@@ -122,8 +137,8 @@ public class PlayerMovement : MonoBehaviour {
     }
 
 
-    void ApplyMovementVector() {
-
-        transform.position += velocity;
+    void ApplyMovementVector()
+    {
+        transform.position += (velocity + Vector3.down * verticalGravityVelocity) * Time.deltaTime;
     }
 }

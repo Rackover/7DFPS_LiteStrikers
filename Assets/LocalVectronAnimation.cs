@@ -39,7 +39,7 @@ public class LocalVectronAnimation : MonoBehaviour
 
         if (playerMovement.SpeedAmount < 0.5f && !playerMovement.IsBoosting)
         {
-            transform.eulerAngles += (transform.forward + transform.right) * 60f * Time.deltaTime * (1f - playerMovement.SpeedAmount);
+            transform.eulerAngles += (transform.forward + transform.up + Vector3.right) * 60f * Time.deltaTime * (1f - playerMovement.SpeedAmount);
         }
         else
         {
@@ -49,7 +49,7 @@ public class LocalVectronAnimation : MonoBehaviour
                     player.transform.TransformDirection(new Vector3(playerMovement.VirtualJoystick.x, playerMovement.VirtualJoystick.y, 1f).normalized),
                     playerMovement.SpeedAmount
                 );
-            transform.eulerAngles = new Vector3(transform.eulerAngles.x, transform.eulerAngles.y, 60f * playerMovement.VirtualJoystick.x);
+            transform.eulerAngles = new Vector3(transform.eulerAngles.x, transform.eulerAngles.y, 60f * (-playerMovement.VirtualJoystick.x));
         }
     }
 }

@@ -13,9 +13,9 @@ const backyardSize = 100;
 const dropAckTimeout = 1;
 const spawnDistance = 10;
 
-const loadouts
+const LOADOUTS =
 {
-	LMG:1
+	LMG:1,
 	TRIPLE:2,
 	HOMING:3
 }
@@ -112,10 +112,12 @@ function get_serialized_state(){
                 id: client.id,
                 position: client.position,
                 rotation: client.rotation,
-                isYou: client.isYou
+                isYou: client.isYou,
+				loadout: client.loadout
             };
         }),
-        scores: clientsScores
+        scores: clientsScores,
+		map: "default"
     });
 }
 
@@ -157,12 +159,14 @@ function get_distance(vec1, vec2){
 }
 
 function make_client(id, ws){
+	console.log(Math.floor(Math.random()*Object.keys(LOADOUTS).length));
     return {
         id:id,
         socket:ws,
         position: get_spawnpoint(),
         rotation: [0, 0, 0, 0],
-        loadout: Math.floor(Math.random()*loadouts.length)
+        loadout: Math.floor(Math.random()*Object.keys(LOADOUTS).length),
+		color: 0
     };
 }
 

@@ -4,6 +4,9 @@ using UnityEngine;
 
 public class Weapon : MonoBehaviour
 {
+    public enum ELoadout { LMG = 1 , TRIPLE = 2, HOMING = 3}
+
+
     [SerializeField] StandardMissile missilePrefab;
     [SerializeField] float delayBetweenShoot = 1f;
     [SerializeField] Transform parentVectron;
@@ -18,9 +21,12 @@ public class Weapon : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (Input.GetMouseButton(1))
+        if (player.IsLocal)
         {
-            Fire();
+            if (Input.GetMouseButton(1))
+            {
+                Fire();
+            }
         }
     }
 
@@ -29,15 +35,7 @@ public class Weapon : MonoBehaviour
             var missile = Instantiate(missilePrefab, parentVectron.position + parentVectron.forward * 2f, parentVectron.rotation);
             missile.transform.parent = null;
 
-            Vector2 mousePosition = Input.mousePosition;
-            if (Game.i.IsMobile)
-            {
-                if (Input.touchCount > 0)
-                {
-                    var touch = Input.GetTouch(0);
-                    mousePosition = touch.position;
-                }
-            }
+            var mousePosition = Game.i.MousePosition;
 
             missile.transform.forward = Camera.main.ScreenPointToRay(mousePosition).direction;
             missile.Owner = player;

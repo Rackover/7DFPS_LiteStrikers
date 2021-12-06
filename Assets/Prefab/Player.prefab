@@ -105,6 +105,9 @@ MonoBehaviour:
   id: 0
   catchUpSpeed: 4
   textMesh: {fileID: 0}
+  isInScreen: 0
+  localDistanceMeters: 0
+  screenPosition: {x: 0, y: 0, z: 0}
 --- !u!114 &5909940810328024256
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -118,7 +121,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerScript: {fileID: 5909940810328024263}
-  gravity: 5
+  gravity: 30
   worldCollider: {fileID: 5909940810328024257}
   camera: {fileID: 5909940810373472038}
   killZ: -600
@@ -126,6 +129,8 @@ MonoBehaviour:
   boostAcceleration: 1
   rotationSpeed: 3
   trail: {fileID: 5909940810828769419}
+  frictionAmount: 1
+  velocityReductionPerSpeed: 1.2
 --- !u!114 &5909940810328024261
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -352,7 +357,6 @@ MonoBehaviour:
   playerScript: {fileID: 5909940810328024263}
   fov: 70
   boostFov: 110
-  bobLevels: 4
   shakeForce: 0.1
   blur: {fileID: 5909940810373472036}
   colorCorrection: {fileID: 7640699091764932996}

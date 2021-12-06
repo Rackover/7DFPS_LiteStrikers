@@ -8,7 +8,6 @@ public class PlayerCamera : MonoBehaviour {
 
     [SerializeField] private float fov = 80f;
     [SerializeField] private float boostFov = 110f;
-    [SerializeField] private float bobLevels = 4;
 
     [SerializeField] private float shakeForce = 0.1f;
 

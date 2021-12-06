@@ -11,6 +11,12 @@ public class Game : MonoBehaviour
     public List<Player> Players { get; set; } = new List<Player>();
     public Player LocalPlayer { get; private set; }
 
+    public Vector2 MousePosition;
+
+    public bool IsPressing { get; private set; }
+
+    public bool IsFiring { get; private set; }
+
     public bool IsMobile { get; private set; }
 
     [SerializeField] private bool forceMobile;
@@ -164,11 +170,14 @@ public class Game : MonoBehaviour
     async void InitWebSock()
     {
         connectionState = E_ConnectionState.CONNECTING;
-//#if DEBUG
-        websocket = new WebSocket("ws://rx.louve.systems:1234");
-//#else
-//        websocket = new WebSocket("wss://kittypark.louve.systems");
-//#endif
+
+        var addr = "ws://rx.louve.systems:1235";
+
+        //#if DEBUG
+        //        addr = "wss://microstrikers.louve.systems";
+        //#endif
+
+        websocket = new WebSocket(addr);
         websocket.OnOpen += () =>
         {
             connectionState = E_ConnectionState.OK;
@@ -177,7 +186,7 @@ public class Game : MonoBehaviour
         websocket.OnError += (e) =>
         {
             connectionState = E_ConnectionState.ERROR;
-            Debug.Log("Error! " + e);
+            Debug.Log($"Error! {addr} {e}");
         };
 
         websocket.OnClose += (e) =>
@@ -208,6 +217,7 @@ public class Game : MonoBehaviour
             catch (System.Exception e)
             {
                 Debug.LogError(e);
+                Debug.LogError(System.Text.Encoding.UTF8.GetString(bytes));
             }
 
 
@@ -256,21 +266,17 @@ public class Game : MonoBehaviour
         websocket.SendText(NetControllers.PROTOCOL_MOVESTATE + Newtonsoft.Json.JsonConvert.SerializeObject(new NetControllers.PlayerMove()
         {
             id = LocalPlayer.id,
-            isRunning = infos.IsBoosting,
+            isBoosting = infos.IsBoosting,
             position = new NetControllers.Position()
             {
                 x = position.x,
                 y = position.y,
                 z = position.z
             },
-            rotation = rotation.x + " " + rotation.y + " " + rotation.z + " " + rotation.w
+            rotation = new float[] { rotation.x, rotation.y, rotation.z, rotation.w }
         }));
     }
 
-    public void SendCaughtBird(int birdId)
-    {
-        websocket.SendText(NetControllers.PROTOCOL_CATCH + birdId);
-    }
 
     public void SendMeow()
     {
@@ -291,7 +297,6 @@ public class Game : MonoBehaviour
 
     public int GetScore(int clientId)
     {
-        Debug.Log("Getting score for client ID " + clientId);
         return scores.ContainsKey(clientId) ? scores[clientId] : 0;
     }
 
@@ -306,6 +311,26 @@ public class Game : MonoBehaviour
 #if !UNITY_WEBGL || UNITY_EDITOR
         websocket.DispatchMessageQueue();
 #endif
+
+        if (Input.touchCount > 0)
+        {
+            IsPressing = true;
+            MousePosition = Vector2.zero;
+            for (int i = 0; i < Input.touchCount; i++)
+            {
+                MousePosition += Input.touches[i].position;
+            }
+
+            MousePosition /= Input.touchCount;
+
+            IsFiring = Input.touchCount > 2;
+        }
+        else
+        {
+            IsFiring = Input.GetMouseButton(1);
+            IsPressing = Input.GetMouseButton(0);
+            MousePosition = Input.mousePosition;
+        }
     }
 
     private void OnApplicationQuit()
