@@ -10,7 +10,11 @@ public class PlayerCamera : MonoBehaviour {
     [SerializeField] private float boostFov = 110f;
     [SerializeField] private float bobLevels = 4;
 
+    [SerializeField] private float shakeForce = 0.1f;
+
     [SerializeField] private MotionBlur blur;
+
+    [SerializeField] private ColorCorrectionCurves colorCorrection;
 
     public PlayerMovement player;
     public Weapon weapon;
@@ -20,6 +24,11 @@ public class PlayerCamera : MonoBehaviour {
 
     // Start is called before the first frame update
     void Start() {
+        if (!playerScript.IsLocal)
+        {
+            Destroy(this.gameObject);
+        }
+
         camera = GetComponent<Camera>();
         originalLocalPosition = transform.localPosition;
     }
@@ -27,16 +36,20 @@ public class PlayerCamera : MonoBehaviour {
     // Update is called once per frame
     void Update() 
     {
-        if (player.SpeedAmount > 0.9f)
+        if (/*player.SpeedAmount > 0.5f &&*/ player.IsBoosting)
         {
-            transform.localPosition = originalLocalPosition + new Vector3(Random.value, Random.value, Random.value) * 0.1f * player.SpeedAmount * Mathf.Sign(Random.value-0.5f);
+            transform.localPosition = originalLocalPosition + new Vector3(Random.value, Random.value, Random.value) *  Mathf.Sin(player.SpeedAmount * Mathf.PI) * Mathf.Sign(Random.value-0.5f) * shakeForce;
         }
         else
         {
             transform.localPosition = originalLocalPosition;
         }
 
-        camera.fieldOfView = Mathf.Lerp(fov, boostFov, player.SpeedAmount);
-        blur.blurAmount = Mathf.Lerp(1f, 0.3f, player.SpeedAmount);
+        var delta = Mathf.Sin(player.SpeedAmount * Mathf.PI / 2f);
+
+        camera.fieldOfView = Mathf.Lerp(fov, boostFov, delta);
+        blur.blurAmount = Mathf.Lerp(1f, 0.3f, delta);
+
+        colorCorrection.saturation = Mathf.Lerp(0.2f, 1f, delta);
     }
 }

@@ -59,7 +59,7 @@ wss.on('connection', function(ws) {
     // let interval = setInterval(function(){
         // ws.send(PROTOCOL_MOVESTATE+JSON.stringify({
             // id: 230,
-            // position: {x: 4, y:0.5, z:Math.sin((new Date()).getMilliseconds())*4},
+            // position: {x: 4, y:0.5, z:5 /*  Math.sin((new Date()).getMilliseconds()/10)*400 */},
             // rotation: "0 0 0 0"
         // }));
     // }, 100);
@@ -92,18 +92,10 @@ wss.on('connection', function(ws) {
     // Acknowledge anyway after a while to avoid freezing the game
     setTimeout(function(){acknowledge_client({id:id}, null, null)}, dropAckTimeout);
     
-    // Test
-    // setTimeout(function(){        
-        // ws.send(PROTOCOL_MOVESTATE+JSON.stringify({
-            // id: 230,
-            // position: {x: 4, y:0.5, z:Math.sin((new Date()).getMilliseconds())*4},
-            // rotation: "0 0 0 0"
-        // })); 
-    // }, 1500);
 });
 
 server.listen(port, function() {
-    log('Listening on http://localhost:'+port);
+    log('Listening on port '+port);
 });
 
 setInterval(function(){

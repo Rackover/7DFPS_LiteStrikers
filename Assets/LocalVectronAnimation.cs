@@ -10,7 +10,6 @@ public class LocalVectronAnimation : MonoBehaviour
     [SerializeField]
     PlayerMovement playerMovement;
 
-
     [SerializeField]
     float lerpSpeed = 5f;
 
@@ -40,7 +39,7 @@ public class LocalVectronAnimation : MonoBehaviour
 
         if (playerMovement.SpeedAmount < 0.5f && !playerMovement.IsBoosting)
         {
-            transform.eulerAngles += (transform.forward + transform.right) * 40f * Time.deltaTime * (1f - playerMovement.SpeedAmount);
+            transform.eulerAngles += (transform.forward + transform.right) * 60f * Time.deltaTime * (1f - playerMovement.SpeedAmount);
         }
         else
         {

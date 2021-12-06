@@ -64,7 +64,7 @@ public class NetControllers : Dictionary<string, Action<NativeWebSocket.WebSocke
         if (state.deadBird > 0) {
             var bird = Game.i.Players.Find(o => o.id == state.deadBird);
 
-            if (bird && !Game.i.deadBirds.Contains(state.deadBird)) {
+            if (bird /*&& !Game.i.deadBirds.Contains(state.deadBird)*/) {
                 //bird.Kill(withFX: true);
             }
         }
@@ -76,8 +76,6 @@ public class NetControllers : Dictionary<string, Action<NativeWebSocket.WebSocke
         var state = JsonConvert.DeserializeObject<GameState>(data);
 
         Game.i.DestroyAllPlayers();
-
-        Game.i.deadBirds.Clear();
 
         foreach (var client in state.clients) {
             var splitRot = client.rotation.Split(' ');
@@ -101,7 +99,7 @@ public class NetControllers : Dictionary<string, Action<NativeWebSocket.WebSocke
         }
 
         Debug.Log("Sending ACK");
-        ws.SendText(PROTOCOL_ACKNOWLEDGE_STATE + (Game.i.IsMobile ? "observer" : ""));
+        ws.SendText(PROTOCOL_ACKNOWLEDGE_STATE);
     }
 
     [Serializable]

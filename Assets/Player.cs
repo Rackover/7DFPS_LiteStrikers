@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Player : MonoBehaviour {
-    public bool IsLocal { get; set; } = true; // false
+    public bool IsLocal { get; set; } = false;
 
     public AudioSource source;
 
@@ -15,6 +15,10 @@ public class Player : MonoBehaviour {
     public int id = 0;
     public float catchUpSpeed = 4f;
     public TextMesh textMesh;
+
+    public bool isInScreen = false;
+    public float localDistanceMeters = 0f;
+    public Vector3 screenPosition;
 
     NetControllers.DeserializedPlayerMove previousMovement;
     NetControllers.DeserializedPlayerMove targetMovement;
@@ -54,10 +58,8 @@ public class Player : MonoBehaviour {
     }
 
     private void FixedUpdate() {
-
-        return; // DEBUG
-
-        if (IsLocal && !Game.i.IsMobile) {
+        if (IsLocal) 
+        {
             Game.i.SendMyPosition(movement.transform.position, movement.transform.rotation, movement);
         }
     }

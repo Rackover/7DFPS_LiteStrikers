@@ -28,7 +28,18 @@ public class Weapon : MonoBehaviour
         if (lastShot < Time.time - delayBetweenShoot) {
             var missile = Instantiate(missilePrefab, parentVectron.position + parentVectron.forward * 2f, parentVectron.rotation);
             missile.transform.parent = null;
-            missile.transform.forward = Camera.main.ScreenPointToRay(Input.mousePosition).direction;
+
+            Vector2 mousePosition = Input.mousePosition;
+            if (Game.i.IsMobile)
+            {
+                if (Input.touchCount > 0)
+                {
+                    var touch = Input.GetTouch(0);
+                    mousePosition = touch.position;
+                }
+            }
+
+            missile.transform.forward = Camera.main.ScreenPointToRay(mousePosition).direction;
             missile.Owner = player;
             lastShot = Time.time;
         }
