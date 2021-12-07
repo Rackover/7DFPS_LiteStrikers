@@ -24,26 +24,47 @@ const PROTOCOL_MOVESTATE = "MOV";
 const PROTOCOL_UPDATE_SCORE = "SCO";
 const PROTOCOL_STATE = "STT";
 const PROTOCOL_ACKNOWLEDGE_STATE = "AKS";
-const PROTOCOL_KILL_PLAYER = "KIL";
+const PROTOCOL_DISCONNECT_PLAYER = "DIS";
 const PROTOCOL_SHOOTSTATE = "SHT";
 const PROTOCOL_SET_LOADOUT = "LDT";
 const PROTOCOL_MEOW = "MEW";
+const PROTOCOL_MISSILE_BIRTH = "MBI";
+const PROTOCOL_MISSILE_MOVESTATE = "MMV";
+const PROTOCOL_ELIMINATE_PLAYER = "ELP";
+const PROTOCOL_SPAWN_PLAYER = "SPP";
+const PROTOCOL_REQUEST_SPAWN = "RSP";
 
 const handlers = {};
 handlers[PROTOCOL_MOVESTATE] = send_position_to_everyone_but_me;
-handlers[PROTOCOL_UPDATE_SCORE]= function(me, ws, data){ log("someone ("+me.id+") sent me a PROTOCOL_UPDATE_SCORE ??");};
 handlers[PROTOCOL_ACKNOWLEDGE_STATE]=  acknowledge_client;
-handlers[PROTOCOL_STATE]= function(me, ws, data){ log("someone ("+me.id+") sent me a PROTOCOL_STATE ??");};
-handlers[PROTOCOL_KILL_PLAYER]= function(me, ws, data){ log("someone ("+me.id+") sent me a PROTOCOL_KILL_PLAYER ??");};
 handlers[PROTOCOL_MEOW]= send_meow_to_everyone;
-handlers[PROTOCOL_SHOOTSTATE]= send_shoot_to_everyone_but_me;
+handlers[PROTOCOL_SHOOTSTATE]= send_shoot_to_everyone;
 handlers[PROTOCOL_SET_LOADOUT]= switch_my_loadout;
+handlers[PROTOCOL_REQUEST_SPAWN]= request_spawn;
+
+const forbiddenProtocols = [
+	PROTOCOL_UPDATE_SCORE, 
+	PROTOCOL_STATE, 
+	PROTOCOL_DISCONNECT_PLAYER,
+	PROTOCOL_MISSILE_BIRTH,
+	PROTOCOL_ELIMINATE_PLAYER,
+	PROTOCOL_SPAWN_PLAYER,
+	PROTOCOL_MISSILE_MOVESTATE
+];
+
+for(i in forbiddenProtocols){
+	const protocol = forbiddenProtocols[i];
+	handlers[protocol]= function(me, ws, data){ log("someone ("+me.id+") sent me a "+protocol+" ??");};
+}
 
 let clients = {};
 let idCounter = 0;
+let missileIdCounter = 0;
 let clientsAwaitingAck = [];
 let clientsScores = {};
 
+const missileUpdateFrequencyMs = 10;
+const homingMissileSpeed = 15; // meters per second
 
 wss.on('connection', function(ws) {
     
@@ -77,7 +98,7 @@ wss.on('connection', function(ws) {
     });
 
     ws.on('close', function() {
-        send_kill_player(id);   
+        send_disconnect_player(id);   
         log("GOODBYE Client "+id+".");
         // clearInterval(interval);
         delete clients[id];
@@ -110,10 +131,12 @@ function get_serialized_state(){
         clients: Object.values(clients).map(function (client) {
             return {
                 id: client.id,
+				isSpawned: client.isSpawned,
                 position: client.position,
                 rotation: client.rotation,
                 isYou: client.isYou,
-				loadout: client.loadout
+				loadout: client.loadout,
+				color: client.color
             };
         }),
         scores: clientsScores,
@@ -163,6 +186,7 @@ function make_client(id, ws){
     return {
         id:id,
         socket:ws,
+		isSpawned: false,
         position: get_spawnpoint(),
         rotation: [0, 0, 0, 0],
         loadout: Math.floor(Math.random()*Object.keys(LOADOUTS).length),
@@ -181,15 +205,15 @@ function log(obj){
 // PROTOCOL
 
 function send_position_to_everyone_but_me(me, ws, data){
-    for(client_id in clients){
-        if (client_id == me.id){
+    for(clientId in clients){
+        if (clientId == me.id){
             let parsed = JSON.parse(data);
-            clients[client_id].position = parsed.position;
-            clients[client_id].isSneaking = parsed.isSneaking;
+            clients[clientId].position = parsed.position;
+            clients[clientId].isSneaking = parsed.isSneaking;
             continue;            
         }
         
-        clients[client_id].socket.send(PROTOCOL_MOVESTATE+data);
+        clients[clientId].socket.send(PROTOCOL_MOVESTATE+data);
     }
 }
 
@@ -197,15 +221,14 @@ function send_caught_to_everyone_but_me_and_increase_score(me, ws, data){
     try{
         log("Client "+me.id+" caught bird "+data);
         
-        
         if (!clientsScores[me.id]){
             clientsScores[me.id] = 0;
         }
         
         clientsScores[me.id]++;
         
-        for(client_id in clients){            
-            clients[client_id].socket.send(PROTOCOL_UPDATE_SCORE+JSON.stringify({
+        for(clientId in clients){            
+            clients[clientId].socket.send(PROTOCOL_UPDATE_SCORE+JSON.stringify({
                 clientId:me.id,
                 newScore: clientsScores[me.id]
             }));
@@ -218,14 +241,97 @@ function send_caught_to_everyone_but_me_and_increase_score(me, ws, data){
 }
 
 function send_meow_to_everyone(me, ws, data){
-    for(client_id in clients)
+    for(clientId in clients)
 	{            
-        clients[client_id].socket.send(PROTOCOL_MEOW+me.id);
+        clients[clientId].socket.send(PROTOCOL_MEOW+me.id);
     }
 }
 
-function send_shoot_to_everyone_but_me(me, ws, data)
+// shootstate
+/*
 {
+	target: int,
+	position: {xyz},
+	initialRotation: float[4]
+}
+*/
+function send_shoot_to_everyone(me, ws, data)
+{
+	if (me.loadout == LOADOUTS.LMG)
+	{
+		for(clientId in clients)
+		{            
+			clients[clientId].socket.send(PROTOCOL_SHOOTSTATE+me.id);
+		}
+	}
+	else
+	{
+		// missile birth
+		
+		const isHoming = me.loadout == LOADOUTS.HOMING;
+		
+		const missile = {
+			owner: me.id,
+			type: me.loadout,
+			target: data.target,
+			position: data.position,
+			initialRotation: data.rotation,
+			id: isHoming ? ++missileIdCounter : 0, // Only used for homing
+			lifetime: me.loadout == LOADOUTS.TRIPLE ? 1.5 : 3 // seconds
+		}
+		
+		for(clientId in clients)
+		{            
+			clients[clientId].socket.send(PROTOCOL_MISSILE_BIRTH+JSON.stringify(missile));
+		}
+		
+		if (isHoming){
+			// Missile update
+			let interval = setInterval(function(){
+				missile.lifetime -= missileUpdateFrequencyMs;
+				if (missile.lifetime <= 0 || clients[missile.target] == undefined)
+				{
+					clearInterval(interval);
+				}
+				else
+				{
+					const target = clients[missile.target];
+					
+					const distanceVector = { 
+						x: target.position.x - missile.position.x,
+						y: target.position.y - missile.position.y,
+						z: target.position.z - missile.position.z
+					};
+					
+					const magnitude = Math.sqrt(
+						x: directionVector.x * directionVector.x +
+						y: directionVector.y * directionVector.y +
+						z: directionVector.z * directionVector.z
+					);
+					
+					const direction = {
+						x: distanceVector.x / magnitude,
+						y: distanceVector.y / magnitude,
+						z: distanceVector.z / magnitude
+					};
+					
+					// No inaccuracy
+					missile.position = {
+						x: missile.position.x + distanceVector.x * homingMissileSpeed * missileUpdateFrequencyMs,
+						y: missile.position.y + distanceVector.y * homingMissileSpeed * missileUpdateFrequencyMs,
+						z: missile.position.z + distanceVector.z * homingMissileSpeed * missileUpdateFrequencyMs
+					}
+					
+					for(clientId in clients)
+					{            
+						clients[clientId].socket.send(PROTOCOL_MISSILE_MOVESTATE+JSON.stringify(missile));
+					}
+				}
+				
+			}, missileUpdateFrequencyMs);
+				
+		}
+	}
 	
 }
 
@@ -235,9 +341,9 @@ function switch_my_loadout(me, ws, data)
 	
 }
 
-function send_kill_player(id){
-    for(client_id in clients){            
-        clients[client_id].socket.send(PROTOCOL_KILL_PLAYER+id);
+function send_disconnect_player(id){
+    for(clientId in clients){ 
+        clients[clientId].socket.send(PROTOCOL_DISCONNECT_PLAYER+id);
     }
 }
 
