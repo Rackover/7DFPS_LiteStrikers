@@ -227,7 +227,7 @@ public class Game : MonoBehaviour
         await websocket.Connect();
     }
 
-    public Player SpawnPlayer(int id, Vector3 position, Quaternion rotation, bool isLocal = false)
+    public Player AddPlayer(int id, Vector3 position, Quaternion rotation, bool isLocal = false)
     {
         var player = Object.Instantiate(playerPrefab).GetComponent<Player>();
         player.id = id;
@@ -243,6 +243,11 @@ public class Game : MonoBehaviour
         Players.Add(player);
 
         return player;
+    }
+
+    public void SpawnPlayer(int id)
+    {
+        // todo !
     }
 
     public void DestroyAllPlayers()
@@ -323,7 +328,7 @@ public class Game : MonoBehaviour
 
             MousePosition /= Input.touchCount;
 
-            IsFiring = Input.touchCount > 2;
+            IsFiring = Input.touchCount > 4;
         }
         else
         {
@@ -338,7 +343,7 @@ public class Game : MonoBehaviour
         var _ = websocket.Close();
     }
 
-    public void KillPlayer(int id)
+    public void DisconnectPlayer(int id)
     {
         var player = Players.Find(o => o.id == id);
         if (player)

@@ -9,7 +9,7 @@ const server = createServer(app);
 const wss = new WebSocket.Server({ server });
 
 const port = 1235;
-const backyardSize = 100;
+const arenaSize = 100;
 const dropAckTimeout = 1;
 const spawnDistance = 10;
 
@@ -21,7 +21,7 @@ const LOADOUTS =
 }
 
 const PROTOCOL_MOVESTATE = "MOV";
-const PROTOCOL_UPDATE_SCORE = "SCO";
+const PROTOCOL_UPDATE_PLAYER = "UPP";
 const PROTOCOL_STATE = "STT";
 const PROTOCOL_ACKNOWLEDGE_STATE = "AKS";
 const PROTOCOL_DISCONNECT_PLAYER = "DIS";
@@ -30,8 +30,9 @@ const PROTOCOL_SET_LOADOUT = "LDT";
 const PROTOCOL_MEOW = "MEW";
 const PROTOCOL_MISSILE_BIRTH = "MBI";
 const PROTOCOL_MISSILE_MOVESTATE = "MMV";
-const PROTOCOL_ELIMINATE_PLAYER = "ELP";
-const PROTOCOL_SPAWN_PLAYER = "SPP";
+const PROTOCOL_ELIMINATE_SELF= "ELS";
+const PROTOCOL_SPAWN_PLAYER = "SPP"; // Identical to PROTOCOL_UPDATE_PLAYER
+const PROTOCOL_UPDATE_SCORE = "SCO";
 const PROTOCOL_REQUEST_SPAWN = "RSP";
 
 const handlers = {};
@@ -41,15 +42,16 @@ handlers[PROTOCOL_MEOW]= send_meow_to_everyone;
 handlers[PROTOCOL_SHOOTSTATE]= send_shoot_to_everyone;
 handlers[PROTOCOL_SET_LOADOUT]= switch_my_loadout;
 handlers[PROTOCOL_REQUEST_SPAWN]= request_spawn;
+handlers[PROTOCOL_ELIMINATE_SELF] = eliminate_myself;
 
 const forbiddenProtocols = [
 	PROTOCOL_UPDATE_SCORE, 
 	PROTOCOL_STATE, 
 	PROTOCOL_DISCONNECT_PLAYER,
 	PROTOCOL_MISSILE_BIRTH,
-	PROTOCOL_ELIMINATE_PLAYER,
 	PROTOCOL_SPAWN_PLAYER,
-	PROTOCOL_MISSILE_MOVESTATE
+	PROTOCOL_MISSILE_MOVESTATE,
+	PROTOCOL_UPDATE_PLAYER
 ];
 
 for(i in forbiddenProtocols){
@@ -73,21 +75,12 @@ wss.on('connection', function(ws) {
     clients[id] = make_client(id, ws);
     clientsAwaitingAck.push(id);
     
-    log("HELLO Client "+id+" joined. Spawned them at position "+JSON.stringify(clients[id].position));
+    log("HELLO Client "+id+" joined. Awaiting spawn request");
 
-    // Test
-    // let interval = setInterval(function(){
-        // ws.send(PROTOCOL_MOVESTATE+JSON.stringify({
-            // id: 230,
-            // position: {x: 4, y:0.5, z:5 /*  Math.sin((new Date()).getMilliseconds()/10)*400 */},
-            // rotation: "0 0 0 0"
-        // }));
-    // }, 100);
-    
     ws.on('message', function(data) {
         // Has to be a string, fuck it
-        let controller = data.substr(0, 3);
-        let contents = data.substr(3, data.length);
+        const controller = data.substr(0, 3);
+        const contents = data.substr(3, data.length);
         
         if (handlers.hasOwnProperty(controller)){
             handlers[controller](clients[id], ws, contents);
@@ -115,6 +108,7 @@ wss.on('connection', function(ws) {
 });
 
 server.listen(port, function() {
+	log('=== LITESTRIKERS SERVER ===');
     log('Listening on port '+port);
 });
 
@@ -128,8 +122,15 @@ function send_state_to(ws){
 
 function get_serialized_state(){
     return JSON.stringify({
-        clients: Object.values(clients).map(function (client) {
-            return {
+        clients: Object.values(clients).map(get_stripped_client),
+        scores: clientsScores,
+		map: "default"
+    });
+}
+
+function get_stripped_client(client)
+{
+	return {
                 id: client.id,
 				isSpawned: client.isSpawned,
                 position: client.position,
@@ -138,14 +139,10 @@ function get_serialized_state(){
 				loadout: client.loadout,
 				color: client.color
             };
-        }),
-        scores: clientsScores,
-		map: "default"
-    });
 }
 
 function get_spawnpoint(){
-    let randomPoint = {x: backyardSize/2, z:backyardSize/2};
+    let randomPoint = {x: arenaSize/2, z:arenaSize/2};
     let isOk = false;
     
     while(!isOk){
@@ -153,8 +150,8 @@ function get_spawnpoint(){
         
         if (!isOk){
             randomPoint = {
-                x: (Math.random()*2 - 1) * backyardSize,
-                z: (Math.random()*2 - 1) * backyardSize,
+                x: (Math.random()*2 - 1) * arenaSize,
+                z: (Math.random()*2 - 1) * arenaSize,
             }
         }
     }
@@ -187,7 +184,7 @@ function make_client(id, ws){
         id:id,
         socket:ws,
 		isSpawned: false,
-        position: get_spawnpoint(),
+        position: {x:0, y:0, z:0},
         rotation: [0, 0, 0, 0],
         loadout: Math.floor(Math.random()*Object.keys(LOADOUTS).length),
 		color: 0
@@ -215,29 +212,6 @@ function send_position_to_everyone_but_me(me, ws, data){
         
         clients[clientId].socket.send(PROTOCOL_MOVESTATE+data);
     }
-}
-
-function send_caught_to_everyone_but_me_and_increase_score(me, ws, data){
-    try{
-        log("Client "+me.id+" caught bird "+data);
-        
-        if (!clientsScores[me.id]){
-            clientsScores[me.id] = 0;
-        }
-        
-        clientsScores[me.id]++;
-        
-        for(clientId in clients){            
-            clients[clientId].socket.send(PROTOCOL_UPDATE_SCORE+JSON.stringify({
-                clientId:me.id,
-                newScore: clientsScores[me.id]
-            }));
-        }
-    }
-    catch(e){
-        log(e);
-    }
-    
 }
 
 function send_meow_to_everyone(me, ws, data){
@@ -304,9 +278,9 @@ function send_shoot_to_everyone(me, ws, data)
 					};
 					
 					const magnitude = Math.sqrt(
-						x: directionVector.x * directionVector.x +
-						y: directionVector.y * directionVector.y +
-						z: directionVector.z * directionVector.z
+						directionVector.x * directionVector.x +
+						directionVector.y * directionVector.y +
+						directionVector.z * directionVector.z
 					);
 					
 					const direction = {
@@ -335,15 +309,69 @@ function send_shoot_to_everyone(me, ws, data)
 	
 }
 
+function request_spawn(me, ws, data)
+{
+	me.isSpawned = true;
+	me.position = get_spawnpoint();
+	
+	for(clientId in clients)
+	{ 
+		if (clientId != me.id)
+		{
+			clients[clientId].socket.send(PROTOCOL_SPAWN_PLAYER+JSON.stringify(get_stripped_client(me)));
+		}
+	}
+}
+
 function switch_my_loadout(me, ws, data)
 {
 	const loadout = data.loadout;
 	
+	if (loadout < Object.keys(LOADOUTS).length -1)
+	{
+		me.loadout = loadout;
+	
+		for(clientId in clients)
+		{ 
+			if (clientId != me.id)
+			{
+				clients[clientId].socket.send(PROTOCOL_UPDATE_PLAYER+JSON.stringify(get_stripped_client(me)));
+			}
+		}
+	}
+	else
+	{
+		log("Received garbage loadout "+loadout+" from client "+me.id);
+	}
 }
 
 function send_disconnect_player(id){
     for(clientId in clients){ 
         clients[clientId].socket.send(PROTOCOL_DISCONNECT_PLAYER+id);
+    }
+}
+
+function eliminate_myself(me, ws, data){
+		
+	const killerID = data.killer;
+	
+	if (!clientsScores[killerID]){
+		clientsScores[killerID] = 0;
+	}
+	
+	clientsScores[killerID]++;
+	
+	me.isSpawned = false;
+		
+    for(clientId in clients){ 
+        clients[clientId].socket.send(PROTOCOL_UPDATE_SCORE+JSON.stringify(
+			{
+				scores: clientScores,
+				playerUpdates: [
+					get_stripped_client(me)
+				]
+			}
+		));
     }
 }
 
