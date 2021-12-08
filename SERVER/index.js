@@ -68,6 +68,10 @@ let clientsScores = {};
 const missileUpdateFrequencyMs = 10;
 const homingMissileSpeed = 15; // meters per second
 
+app.get('/', function(req, res){
+	res.json(get_state());
+});
+
 wss.on('connection', function(ws) {
     
     const id = ++idCounter;
@@ -95,6 +99,7 @@ wss.on('connection', function(ws) {
         log("GOODBYE Client "+id+".");
         // clearInterval(interval);
         delete clients[id];
+		delete clientScores[id];
     });
     
     // Send state
@@ -121,11 +126,15 @@ function send_state_to(ws){
 }
 
 function get_serialized_state(){
-    return JSON.stringify({
+    return JSON.stringify(get_state());
+}
+
+function get_state(){
+	return {
         clients: Object.values(clients).map(get_stripped_client),
         scores: clientsScores,
 		map: "default"
-    });
+	}
 }
 
 function get_stripped_client(client)
@@ -381,4 +390,3 @@ function acknowledge_client(me, ws, data){
         clientsAwaitingAck.splice(index, 1);
     }
 }
-
