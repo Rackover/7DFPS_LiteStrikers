@@ -19,6 +19,9 @@ public class Game : MonoBehaviour
 
     public bool IsMobile { get; private set; }
 
+    public float killZ;
+
+    [SerializeField] private MeshRenderer waterPlane;
     [SerializeField] private bool forceMobile;
     [SerializeField] private GameObject playerPrefab;
     [SerializeField] private Camera observerCamera;
@@ -48,6 +51,8 @@ public class Game : MonoBehaviour
     void Awake()
     {
         i = this;
+
+        //waterPlane.transform.position  = Vector3.down* killZ;
 
         names.AddRange(new string[]
         {
@@ -98,10 +103,10 @@ public class Game : MonoBehaviour
     {
         var wait = new WaitForEndOfFrame();
         var sqrMaxDist = visibilityDistance * visibilityDistance;
-        var camera = LocalPlayer && LocalPlayer.IsSpawned ? LocalPlayer.camera : observerCamera;
 
         while (true)
         {
+            var camera = LocalPlayer && LocalPlayer.IsSpawned ? LocalPlayer.camera : observerCamera;
 
             for(var i = 0; i < Players.Count; i++)
             {
@@ -128,7 +133,7 @@ public class Game : MonoBehaviour
                     if (isInScreen && Vector3.Dot(vec, camera.transform.forward) < 0)
                     {
                         var distance = Mathf.Sqrt(sqrDist);
-                        if (!LocalPlayer.IsSpawned || !Physics.Raycast(player.transform.position,  vec, out RaycastHit info, distance, LayerMask.GetMask("WorldStatic")))
+                        if (!LocalPlayer.IsSpawned || !Physics.Raycast(player.transform.position,  vec, out RaycastHit _, distance, LayerMask.GetMask("WorldStatic")))
                         {
                             player.screenPosition = screenPoint;
                             player.localDistanceMeters = distance;
@@ -171,7 +176,7 @@ public class Game : MonoBehaviour
     {
         connectionState = E_ConnectionState.CONNECTING;
 
-        var addr = "ws://localhost:1235";
+        var addr = "ws://rx.louve.systems:1235";
 
         //#if DEBUG
         //        addr = "wss://microstrikers.louve.systems";

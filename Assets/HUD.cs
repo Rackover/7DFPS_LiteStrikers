@@ -7,9 +7,17 @@ using System.Text;
 
 public class HUD : MonoBehaviour
 {
+    [SerializeField]
+    float horizonVerticalAmplitude = 19f;
+
+    [SerializeField]
+    float horizonMaxSize = 128;
 
     [SerializeField]
     MaskableGraphic[] crosshair;
+
+    [SerializeField]
+    Image horizon;
 
     [SerializeField]
     Image outerAim;
@@ -31,13 +39,14 @@ public class HUD : MonoBehaviour
 
     Vector2 outerAimBestSize;
     Vector2 innerAimBestSize;
-
+    float horizonBestSize;
 
     // Start is called before the first frame update
     void Start()
     {
         innerAimBestSize = innerAim.rectTransform.sizeDelta;
         outerAimBestSize = outerAim.rectTransform.sizeDelta;
+        horizonBestSize = horizon.rectTransform.sizeDelta.y;
 
         Cursor.lockState = CursorLockMode.Confined;
     }
@@ -56,7 +65,7 @@ public class HUD : MonoBehaviour
 
         var delta = Mathf.Sin(Game.i.LocalPlayer.movement.SpeedAmount * Mathf.PI / 2f);
 
-        outerAim.rectTransform.sizeDelta = Vector2.Lerp(Vector2.one * Screen.height, outerAimBestSize, delta);
+        //outerAim.rectTransform.sizeDelta = Vector2.Lerp(Vector2.one * Screen.height, outerAimBestSize, delta);
         innerAim.rectTransform.sizeDelta = Vector2.Lerp(Vector2.one * Screen.height, innerAimBestSize, delta);
 
         var mousePosition = Game.i.MousePosition;
@@ -66,7 +75,10 @@ public class HUD : MonoBehaviour
             hair.transform.position = mousePosition;
         }
 
-        outerAim.transform.position = Vector3.Lerp(new Vector3(Screen.width / 2f, Screen.height / 2f, 0f), mousePosition, 0.95f);
+        horizon.rectTransform.anchoredPosition = Vector2.up * horizonVerticalAmplitude * Game.i.LocalPlayer.movement.Pitch101;
+        horizon.rectTransform.sizeDelta = new Vector2(50f, Mathf.Lerp(horizonMaxSize, horizonBestSize, Game.i.LocalPlayer.movement.SpeedAmount));
+
+        //outerAim.transform.position = Vector3.Lerp(new Vector3(Screen.width / 2f, Screen.height / 2f, 0f), mousePosition, 0.95f);
 
         strategicInfo.text = $"Designation: {Game.i.GetNameForId(Game.i.LocalPlayer.id)}\nSpeed: {Mathf.FloorToInt(Game.i.LocalPlayer.movement.VelocityMagnitude * 8f)} knots".ToUpper();
 

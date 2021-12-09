@@ -20,25 +20,17 @@ public class Menu : MonoBehaviour
     float maxHold = 3f;
 
     bool isWaitingOnServer = false;
-
-    // Start is called before the first frame update
+    
+    
     void Start()
     {
         if (Game.i.IsMobile)
         {
-            holdClickText.text = @"TOUCH THE CENTER
-
-HOLD IT FIRMLY
-
-GOOD LUCK";
+            holdClickText.text = @"TOUCH THE CENTER - HOLD IT FIRMLY - GOOD LUCK";
         }
         else
         {
-            holdClickText.text = @"MOUSE TO THE CENTER
-
-CLICK AND HOLD
-
-DON'T LET GO";
+            holdClickText.text = @"MOUSE TO THE CENTER - CLICK AND HOLD - DON'T LET GO";
         }
     }
 

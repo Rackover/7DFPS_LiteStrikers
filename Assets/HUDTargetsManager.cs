@@ -54,7 +54,7 @@ public class HUDTargetsManager : MonoBehaviour
         }
         else
         {
-            return Instantiate(targetExample, transform);
+            return Instantiate(targetExample, targetExample.transform.parent);
         }
     }
 

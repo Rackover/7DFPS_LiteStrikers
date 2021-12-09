@@ -11,7 +11,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float gravity = 20f;
     [SerializeField] private SphereCollider worldCollider;
     [SerializeField] private new PlayerCamera camera;
-    [SerializeField] private float killZ = -50f;
+    private float killZ => Game.i.killZ;
     [SerializeField] private float maxBoost = 40f;
     [SerializeField] private float boostAcceleration = 5f;
     [SerializeField] private float rotationSpeed = 180f;
