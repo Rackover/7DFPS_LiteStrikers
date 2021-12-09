@@ -5,11 +5,14 @@ using UnityEngine;
 public class Player : MonoBehaviour {
     public bool IsLocal { get; set; } = false;
 
-    public AudioSource source;
+    public bool IsSpawned { get; private set; } = false;
 
+    public AudioSource source;
+    public new Camera camera;
     public AudioClip[] meows;
     public Texture[] furTextures;
     public Renderer bodyRenderer;
+    public Weapon weapon;
 
     public PlayerMovement movement;
     public int id = 0;
@@ -44,7 +47,22 @@ public class Player : MonoBehaviour {
         source.PlayOneShot(meows[id % meows.Length]);
     }
 
+    public void Spawn()
+    {
+        if (IsSpawned) Debug.LogError("?? Spawned me twice?");
+
+        IsSpawned = true;
+
+    }
+
+    public void SetLoadout(Weapon.ELoadout loadout)
+    {
+        weapon.Loadout = loadout;
+    }
+
     private void Update() {
+        name = $"{(IsSpawned ? "[ACTIVE]" : "[WAITING]")} {(IsLocal ? "LOCAL_" : "")}{id}_{weapon.Loadout}";
+
         if (IsLocal) return;
 
         // ONLINE ONLY (Remote client)
@@ -58,7 +76,7 @@ public class Player : MonoBehaviour {
     }
 
     private void FixedUpdate() {
-        if (IsLocal) 
+        if (IsLocal && IsSpawned) 
         {
             Game.i.SendMyPosition(movement.transform.position, movement.transform.rotation, movement);
         }

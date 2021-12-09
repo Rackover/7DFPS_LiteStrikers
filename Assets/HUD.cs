@@ -26,6 +26,9 @@ public class HUD : MonoBehaviour
     [SerializeField]
     CanvasGroup group;
 
+    [SerializeField]
+    Canvas canvas;
+
     Vector2 outerAimBestSize;
     Vector2 innerAimBestSize;
 
@@ -35,6 +38,8 @@ public class HUD : MonoBehaviour
     {
         innerAimBestSize = innerAim.rectTransform.sizeDelta;
         outerAimBestSize = outerAim.rectTransform.sizeDelta;
+
+        Cursor.lockState = CursorLockMode.Confined;
     }
 
     // Update is called once per frame
@@ -42,6 +47,11 @@ public class HUD : MonoBehaviour
     {
         if (Game.i.LocalPlayer == null) return;
 
+        canvas.enabled = Game.i.LocalPlayer.IsSpawned;
+
+        if (canvas.enabled == false) return;
+        
+        Cursor.visible = false;
         group.alpha = Game.i.LocalPlayer.movement.SpeedAmount;
 
         var delta = Mathf.Sin(Game.i.LocalPlayer.movement.SpeedAmount * Mathf.PI / 2f);

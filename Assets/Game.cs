@@ -21,8 +21,7 @@ public class Game : MonoBehaviour
 
     [SerializeField] private bool forceMobile;
     [SerializeField] private GameObject playerPrefab;
-    [SerializeField] private GameObject bowlPrefab;
-    [SerializeField] private GameObject mobileCamera;
+    [SerializeField] private Camera observerCamera;
     [SerializeField] private float visibilityDistance = 400f;
 
     WebSocket websocket;
@@ -33,6 +32,7 @@ public class Game : MonoBehaviour
     enum E_ConnectionState { CONNECTING, ERROR, OK };
 
     List<string> names = new List<string>();
+    Dictionary<int, StandardMissile> liveRemoteMissiles = new Dictionary<int, StandardMissile>();
 
     [System.Runtime.InteropServices.DllImport("__Internal")]
     private static extern bool checkIfMobile();
@@ -49,43 +49,10 @@ public class Game : MonoBehaviour
     {
         i = this;
 
-        names.Add("Maverick");
-        names.Add("Goose");
-        names.Add("Viper");
-        names.Add("Iceman");
-        names.Add("Hollywood");
-        names.Add("Charlie");
-        names.Add("Jester");
-        names.Add("Stinger");
-        names.Add("Wolfman");
-        names.Add("Merlin");
-        names.Add("Slider");
-        names.Add("Chipper");
-        names.Add("Sundown");
-        names.Add("Sark");
-        names.Add("Clu");
-        names.Add("Yori");
-        names.Add("Crom");
-        names.Add("Ram");
-        names.Add("Chip");
-        names.Add("Thorne");
-        names.Add("Rinzler");
-        names.Add("Tesler");
-        names.Add("Link");
-        names.Add("Pavel");
-        names.Add("Zero");
-        names.Add("Hurricane");
-        names.Add("Typhoon");
-        names.Add("Tornado");
-        names.Add("Mirage");
-        names.Add("Castor");
-        names.Add("Roc");
-        names.Add("Louve");
-        names.Add("Striker");
-        names.Add("Lancaster");
-        names.Add("Kanoziev");
-        names.Add("Maddox");
-
+        names.AddRange(new string[]
+        {
+            "Maverick", "Goose", "Viper", "Iceman", "Hollywood", "Charlie", "Jester", "Stinger", "Wolfman", "Merlin", "Slider", "Chipper", "Sundown", "Sark", "Clu", "Yori", "Crom", "Ram", "Chip", "Thorne", "Rinzler", "Tesler", "Link", "Pavel", "Zero", "Hurricane", "Typhoon", "Tornado", "Mirage", "Castor", "Roc", "Louve", "Striker", "Lancaster", "Kanoziev", "Maddox", "Trooper", "Aiglon", "Manta", "Sugar", "Thunder", "Dancer", "Crow", "Raven", "Xunlai", "Moose"
+        });
 
         StartCoroutine(ConnectSocket());
 
@@ -98,10 +65,41 @@ public class Game : MonoBehaviour
         StartCoroutine(UpdatePlayersVisibility());
     }
 
+    public void SpawnMissile(NetControllers.Missile missile) 
+    {
+        var owner = GetPlayerById(missile.owner);
+
+        if (owner== null)
+        {
+            Debug.Log($"Missile for unknown owner {missile.owner}, discarding");
+            return;
+        }
+
+        if (!owner.IsSpawned)
+        {
+            Debug.Log($"Attempted missile birth but owner is not spawned! {owner.id}");
+            return;
+        }
+
+        if (missile.type == Weapon.ELoadout.HOMING)
+        {
+            // something to do here
+        }
+        else 
+        {
+            var missileScript = owner.weapon.SpawnMissile();
+            missileScript.transform.position = new Vector3(missile.position.x, missile.position.y, missile.position.z);
+            missileScript.transform.rotation = new Quaternion(missile.initialRotation[0], missile.initialRotation[1], missile.initialRotation[2], missile.initialRotation[2]);
+        }
+    }
+
+
     IEnumerator UpdatePlayersVisibility()
     {
         var wait = new WaitForEndOfFrame();
         var sqrMaxDist = visibilityDistance * visibilityDistance;
+        var camera = LocalPlayer && LocalPlayer.IsSpawned ? LocalPlayer.camera : observerCamera;
+
         while (true)
         {
 
@@ -112,23 +110,25 @@ public class Game : MonoBehaviour
                 var player = Players[i];
 
                 if (player.IsLocal) continue;
+                if (!player.IsSpawned) continue;
 
-                var vec = LocalPlayer.transform.position- player.transform.position;
+
+                var vec = camera.transform.position- player.transform.position;
                 var sqrDist = Vector3.SqrMagnitude(vec);
-                bool isCloseEnough = sqrDist < sqrMaxDist;
+                bool isCloseEnough = !LocalPlayer.IsSpawned || sqrDist < sqrMaxDist;
                 bool isInScreen = false;
                 bool isNotBehindObject = false;
 
                 if (isCloseEnough)
                 {
-                    var screenPoint = Camera.main.WorldToScreenPoint(player.transform.position);
+                    var screenPoint = camera.WorldToScreenPoint(player.transform.position);
 
-                    isInScreen = screenPoint.x > 0 && screenPoint.y > 0 && screenPoint.x < Screen.width && screenPoint.y < Screen.height;
+                    isInScreen = (screenPoint.x > 0 && screenPoint.y > 0 && screenPoint.x < Screen.width && screenPoint.y < Screen.height);
 
-                    if (isInScreen && Vector3.Dot(vec, Camera.main.transform.forward) < 0)
+                    if (isInScreen && Vector3.Dot(vec, camera.transform.forward) < 0)
                     {
                         var distance = Mathf.Sqrt(sqrDist);
-                        if (!Physics.Raycast(player.transform.position,  vec, out RaycastHit info, distance, LayerMask.GetMask("WorldStatic")))
+                        if (!LocalPlayer.IsSpawned || !Physics.Raycast(player.transform.position,  vec, out RaycastHit info, distance, LayerMask.GetMask("WorldStatic")))
                         {
                             player.screenPosition = screenPoint;
                             player.localDistanceMeters = distance;
@@ -171,7 +171,7 @@ public class Game : MonoBehaviour
     {
         connectionState = E_ConnectionState.CONNECTING;
 
-        var addr = "ws://rx.louve.systems:1235";
+        var addr = "ws://localhost:1235";
 
         //#if DEBUG
         //        addr = "wss://microstrikers.louve.systems";
@@ -202,8 +202,6 @@ public class Game : MonoBehaviour
                 string message = System.Text.Encoding.UTF8.GetString(bytes);
                 string controller = message.Substring(0, 3);
                 message = message.Substring(3);
-
-                ////Debug.Log(controller + " => " + message);
 
                 if (controllers.ContainsKey(controller))
                 {
@@ -282,6 +280,21 @@ public class Game : MonoBehaviour
         }));
     }
 
+    public void RequestSpawn()
+    {
+        websocket.SendText(NetControllers.PROTOCOL_REQUEST_SPAWN);
+    }
+
+    public void SendShootState(MissileRequest missileInfo)
+    {
+        websocket.SendText(NetControllers.PROTOCOL_SHOOTSTATE+Newtonsoft.Json.JsonConvert.SerializeObject(missileInfo));
+    }
+
+    public void SendLoadout(Weapon.ELoadout loadout)
+    {
+        websocket.SendText(NetControllers.PROTOCOL_SET_LOADOUT+(int)loadout);
+    }
+
 
     public void SendMeow()
     {
@@ -292,10 +305,6 @@ public class Game : MonoBehaviour
     {
         if (GetPlayerById(clientId) != null)
         {
-            if (!scores.ContainsKey(clientId) || scores[clientId] < score)
-            {
-            }
-
             scores[clientId] = score;
         }
     }

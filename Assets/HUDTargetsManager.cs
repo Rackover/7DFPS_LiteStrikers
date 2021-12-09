@@ -27,6 +27,7 @@ public class HUDTargetsManager : MonoBehaviour
                 target.gameObject.SetActive(true);
 
                 activeTargets.Add(target);
+                Debug.Log($"Adding target " + target + " to active targets");
             }
         }
 
@@ -39,6 +40,7 @@ public class HUDTargetsManager : MonoBehaviour
                 if (target.Player == null)
                 {
                     RemoveTarget(target);
+                    Debug.Log($"Removing target " + target + " from active targets");
                 }
             }
         }

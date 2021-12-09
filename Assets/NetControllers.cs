@@ -7,20 +7,19 @@ using UnityEngine;
 
 public class NetControllers : Dictionary<string, Action<NativeWebSocket.WebSocket, string>> {
 
-    const string PROTOCOL_MOVESTATE = "MOV";
-    const string PROTOCOL_UPDATE_PLAYER = "UPP";
-    const string PROTOCOL_STATE = "STT";
-    const string PROTOCOL_ACKNOWLEDGE_STATE = "AKS";
-    const string PROTOCOL_DISCONNECT_PLAYER = "DIS";
-    const string PROTOCOL_SHOOTSTATE = "SHT";
-    const string PROTOCOL_SET_LOADOUT = "LDT";
-    const string PROTOCOL_MEOW = "MEW";
-    const string PROTOCOL_MISSILE_BIRTH = "MBI";
-    const string PROTOCOL_MISSILE_MOVESTATE = "MMV";
-    const string PROTOCOL_ELIMINATE_SELF = "ELS";
-    const string PROTOCOL_SPAWN_PLAYER = "SPP"; // Identical to PROTOCOL_UPDATE_PLAYER
-    const string PROTOCOL_UPDATE_SCORE = "SCO";
-    const string PROTOCOL_REQUEST_SPAWN = "RSP";
+    public const string PROTOCOL_MOVESTATE = "MOV";
+    public const string PROTOCOL_UPDATE_PLAYER = "UPP";
+    public const string PROTOCOL_STATE = "STT";
+    public const string PROTOCOL_ACKNOWLEDGE_STATE = "AKS";
+    public const string PROTOCOL_DISCONNECT_PLAYER = "DIS";
+    public const string PROTOCOL_SHOOTSTATE = "SHT";
+    public const string PROTOCOL_SET_LOADOUT = "LDT";
+    public const string PROTOCOL_MEOW = "MEW";
+    public const string PROTOCOL_MISSILE_BIRTH = "MBI";
+    public const string PROTOCOL_MISSILE_MOVESTATE = "MMV";
+    public const string PROTOCOL_ELIMINATE_SELF = "ELS";
+    public const string PROTOCOL_UPDATE_SCORE = "SCO";
+    public const string PROTOCOL_REQUEST_SPAWN = "RSP";
 
     public NetControllers() {
         Add(PROTOCOL_MOVESTATE, MovePlayer);
@@ -30,21 +29,48 @@ public class NetControllers : Dictionary<string, Action<NativeWebSocket.WebSocke
         Add(PROTOCOL_STATE, InitializeState);
         Add(PROTOCOL_DISCONNECT_PLAYER, DisconnectPlayer);
         Add(PROTOCOL_MEOW, MakeMeow);
+        Add(PROTOCOL_MISSILE_BIRTH, BirthMissile);
     }
 
     void ReceivePlayerUpdate(NativeWebSocket.WebSocket ws, string data)
     {
+        var playerUpdate = JsonConvert.DeserializeObject<Client>(data);
+        var player = Game.i.GetPlayerById(playerUpdate.id);
+        var move = new DeserializedPlayerMove(playerUpdate.position, playerUpdate.rotation);
+        if (player == null)
+        {
+            Debug.Log("Adding new unknown player " + playerUpdate.id);
+            player = Game.i.AddPlayer(playerUpdate.id, move.position, move.rotation, isLocal: false);
+        }
 
+        player.SetLoadout(playerUpdate.loadout);
+        // SetColor
+
+        if (!player.IsSpawned && playerUpdate.isSpawned)
+        {
+            Debug.Log("Spawning player " + player.id);
+            player.transform.position = move.position;
+            player.transform.LookAt(Vector3.zero);
+            player.Spawn();
+        }
     }
 
+    void BirthMissile(NativeWebSocket.WebSocket ws, string data)
+    {
+        var missileBirth = JsonConvert.DeserializeObject<Missile>(data);
+        Game.i.SpawnMissile(missileBirth);
+    }
+    
+    
     void MovePlayer(NativeWebSocket.WebSocket ws, string data) {
         var move = JsonConvert.DeserializeObject<PlayerMove>(data);
         var player = Game.i.GetPlayerById(move.id);
         var reDeser = new DeserializedPlayerMove(move);
 
         if (player == null) {
-            Debug.Log("Spawning new unknown player " + move.id);
+            Debug.Log($"Move state for unknown player {move.id}! Adding & spawning...");
             player = Game.i.AddPlayer(move.id, reDeser.position, reDeser.rotation, isLocal: false);
+            player.Spawn();
         }
 
         if (player.IsLocal) {
@@ -80,13 +106,19 @@ public class NetControllers : Dictionary<string, Action<NativeWebSocket.WebSocke
         Game.i.DestroyAllPlayers();
 
         foreach (var client in state.clients) {
-            Game.i.AddPlayer(
+            var player = Game.i.AddPlayer(
                 client.id,
                 new Vector3(client.position.x, client.position.y, client.position.z),
                 new Quaternion(client.rotation[0], client.rotation[1], client.rotation[2], client.rotation[3]),
                 isLocal: client.isYou
             );
-            
+
+            if (client.isSpawned)
+            {
+                Debug.Log("Spawning player " + client.id);
+                player.Spawn();
+            }
+
         }
 
         foreach (var score in state.scores) {
@@ -128,9 +160,13 @@ public class NetControllers : Dictionary<string, Action<NativeWebSocket.WebSocke
 
         }
 
-        public DeserializedPlayerMove(PlayerMove move) {
-            position = new Vector3(move.position.x, move.position.y, move.position.z);
-            rotation = new Quaternion(move.rotation[0], move.rotation[1], move.rotation[2], move.rotation[3]);
+        public DeserializedPlayerMove(Position position, float[] rotation)
+        {
+            this.position = new Vector3(position.x, position.y, position.z);
+            this.rotation = new Quaternion(rotation[0], rotation[1], rotation[2], rotation[3]);
+        }
+
+        public DeserializedPlayerMove(PlayerMove move) : this(move.position, move.rotation) {
             isBoosting = move.isBoosting;
         }
     }
@@ -147,9 +183,21 @@ public class NetControllers : Dictionary<string, Action<NativeWebSocket.WebSocke
     }
 
     [Serializable]
-    public class Position {
-        public float x = 0;
-        public float y = 1;
-        public float z = 0;
+    public struct Position {
+        public float x;
+        public float y;
+        public float z;
+    }
+
+    [Serializable]
+    public struct Missile
+    {
+        public int owner;
+        public Weapon.ELoadout type;
+        public int target;
+        public Position position;
+        public float[] initialRotation;
+        public int id;
+        public float lifetime;
     }
 }

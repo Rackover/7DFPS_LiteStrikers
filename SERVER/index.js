@@ -31,7 +31,6 @@ const PROTOCOL_MEOW = "MEW";
 const PROTOCOL_MISSILE_BIRTH = "MBI";
 const PROTOCOL_MISSILE_MOVESTATE = "MMV";
 const PROTOCOL_ELIMINATE_SELF= "ELS";
-const PROTOCOL_SPAWN_PLAYER = "SPP"; // Identical to PROTOCOL_UPDATE_PLAYER
 const PROTOCOL_UPDATE_SCORE = "SCO";
 const PROTOCOL_REQUEST_SPAWN = "RSP";
 
@@ -49,7 +48,6 @@ const forbiddenProtocols = [
 	PROTOCOL_STATE, 
 	PROTOCOL_DISCONNECT_PLAYER,
 	PROTOCOL_MISSILE_BIRTH,
-	PROTOCOL_SPAWN_PLAYER,
 	PROTOCOL_MISSILE_MOVESTATE,
 	PROTOCOL_UPDATE_PLAYER
 ];
@@ -99,7 +97,7 @@ wss.on('connection', function(ws) {
         log("GOODBYE Client "+id+".");
         // clearInterval(interval);
         delete clients[id];
-		delete clientScores[id];
+		delete clientsScores[id];
     });
     
     // Send state
@@ -118,7 +116,7 @@ server.listen(port, function() {
 });
 
 setInterval(function(){
-    log(Object.values(clients).length+" players currently active on the server");
+    log(Object.values(clients).length+" players currently active on the server\n"+get_serialized_state());
 }, 30000);
 
 function send_state_to(ws){
@@ -188,14 +186,14 @@ function get_distance(vec1, vec2){
 }
 
 function make_client(id, ws){
-	console.log(Math.floor(Math.random()*Object.keys(LOADOUTS).length));
     return {
         id:id,
         socket:ws,
 		isSpawned: false,
         position: {x:0, y:0, z:0},
         rotation: [0, 0, 0, 0],
-        loadout: Math.floor(Math.random()*Object.keys(LOADOUTS).length),
+		loadout: LOADOUTS.TRIPLE,
+        // loadout: Math.floor(Math.random()*Object.keys(LOADOUTS).length),
 		color: 0
     };
 }
@@ -240,10 +238,15 @@ function send_meow_to_everyone(me, ws, data){
 */
 function send_shoot_to_everyone(me, ws, data)
 {
+	data = JSON.parse(data);
+	
+	log("Received shoot from "+me.id+", loadout is "+me.loadout+", data is "+JSON.stringify(data));
+	
 	if (me.loadout == LOADOUTS.LMG)
 	{
-		for(clientId in clients)
+		for(clientId in clients)	
 		{            
+			if (clientId == me.id) continue; // LMG has visual authority
 			clients[clientId].socket.send(PROTOCOL_SHOOTSTATE+me.id);
 		}
 	}
@@ -263,8 +266,11 @@ function send_shoot_to_everyone(me, ws, data)
 			lifetime: me.loadout == LOADOUTS.TRIPLE ? 1.5 : 3 // seconds
 		}
 		
+		log(JSON.stringify(missile));
+		
 		for(clientId in clients)
 		{            
+			if (clientId == me.id && !isHoming) continue; // Non homing missiles have client visual authority
 			clients[clientId].socket.send(PROTOCOL_MISSILE_BIRTH+JSON.stringify(missile));
 		}
 		
@@ -320,21 +326,31 @@ function send_shoot_to_everyone(me, ws, data)
 
 function request_spawn(me, ws, data)
 {
+	log("Spawn request from "+me.id);
+	
 	me.isSpawned = true;
 	me.position = get_spawnpoint();
 	
 	for(clientId in clients)
 	{ 
-		if (clientId != me.id)
-		{
-			clients[clientId].socket.send(PROTOCOL_SPAWN_PLAYER+JSON.stringify(get_stripped_client(me)));
-		}
+		clients[clientId].socket.send(PROTOCOL_UPDATE_PLAYER+JSON.stringify(get_stripped_client(me)));
 	}
 }
 
+// data is int/str loadout
 function switch_my_loadout(me, ws, data)
 {
-	const loadout = data.loadout;
+	if (me.isSpawned)
+	{
+		log("Cannot changed loadout for spawned player "+me.id+" into loadout "+data);
+		return;
+	}
+	
+	const loadout = parseInt(data);
+	
+	if (loadout.isNaN()){
+		log("Invalid loadout "+data+" !!");
+	}
 	
 	if (loadout < Object.keys(LOADOUTS).length -1)
 	{
@@ -362,6 +378,8 @@ function send_disconnect_player(id){
 
 function eliminate_myself(me, ws, data){
 		
+	data = JSON.parse(data);
+	
 	const killerID = data.killer;
 	
 	if (!clientsScores[killerID]){
@@ -375,7 +393,7 @@ function eliminate_myself(me, ws, data){
     for(clientId in clients){ 
         clients[clientId].socket.send(PROTOCOL_UPDATE_SCORE+JSON.stringify(
 			{
-				scores: clientScores,
+				scores: clientsScores,
 				playerUpdates: [
 					get_stripped_client(me)
 				]

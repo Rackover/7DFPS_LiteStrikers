@@ -18,8 +18,15 @@ public class PlayerCamera : MonoBehaviour {
     public PlayerMovement player;
     public Weapon weapon;
 
+    private AudioListener listener;
+
     new Camera camera;
     Vector3 originalLocalPosition;
+
+    private void Awake()
+    {
+        listener = GetComponent<AudioListener>();
+    }
 
     // Start is called before the first frame update
     void Start() {
@@ -35,20 +42,25 @@ public class PlayerCamera : MonoBehaviour {
     // Update is called once per frame
     void Update() 
     {
-        if (/*player.SpeedAmount > 0.5f &&*/ player.IsBoosting)
+        listener.enabled = player.IsSpawned;
+
+        if (player.IsSpawned)
         {
-            transform.localPosition = originalLocalPosition + new Vector3(Random.value, Random.value, Random.value) *  Mathf.Sin(player.SpeedAmount * Mathf.PI) * Mathf.Sign(Random.value-0.5f) * shakeForce;
+            if (/*player.SpeedAmount > 0.5f &&*/ player.IsBoosting)
+            {
+                transform.localPosition = originalLocalPosition + new Vector3(Random.value, Random.value, Random.value) * Mathf.Sin(player.SpeedAmount * Mathf.PI) * Mathf.Sign(Random.value - 0.5f) * shakeForce;
+            }
+            else
+            {
+                transform.localPosition = originalLocalPosition;
+            }
+
+            var delta = Mathf.Sin(player.SpeedAmount * Mathf.PI / 2f);
+
+            camera.fieldOfView = Mathf.Lerp(fov, boostFov, delta);
+            blur.blurAmount = Mathf.Lerp(1f, 0.3f, delta);
+
+            colorCorrection.saturation = Mathf.Lerp(0.2f, 1f, delta);
         }
-        else
-        {
-            transform.localPosition = originalLocalPosition;
-        }
-
-        var delta = Mathf.Sin(player.SpeedAmount * Mathf.PI / 2f);
-
-        camera.fieldOfView = Mathf.Lerp(fov, boostFov, delta);
-        blur.blurAmount = Mathf.Lerp(1f, 0.3f, delta);
-
-        colorCorrection.saturation = Mathf.Lerp(0.2f, 1f, delta);
     }
 }

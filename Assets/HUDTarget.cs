@@ -21,11 +21,15 @@ public class HUDTarget : MonoBehaviour
     {
         if (Player)
         {
-            if (Player.isInScreen)
+
+            if (Player.isInScreen && Player.IsSpawned)
             {
                 group.alpha = 1f;
 
+                Debug.Log("Before:" + transform.position);
                 transform.position = Player.screenPosition;
+                //transform.Translate(Player.screenPosition - transform.position);
+                Debug.Log("After: "+ Player.screenPosition+" => "+transform.position);
                 tag.text = $"{Game.i.GetNameForId(Player.id).ToUpper()}\n{Mathf.FloorToInt(Player.localDistanceMeters)}";
 
                 //// Normal
