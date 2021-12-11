@@ -79,8 +79,8 @@ public class PlayerMovement : MonoBehaviour
             {
                 if (transform.position.y < killZ)
                 {
-                    Debug.Log($"Kill Z was hit, resetting position!");
-                    transform.position = new Vector3(5f, 20f, 5F);
+                    Debug.Log($"Kill Z was hit, killing myself!");
+                    Game.i.EliminateMyself();
                     velocity = Vector3.zero;
                     verticalGravityVelocity = 0f;
                 }

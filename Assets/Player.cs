@@ -7,6 +7,8 @@ public class Player : MonoBehaviour {
 
     public bool IsSpawned { get; private set; } = false;
 
+    public bool IsRadarVisible => IsSpawned && (movement.IsBoosting || movement.SpeedAmount > 0.5f);
+
     public AudioSource source;
     public new Camera camera;
     public AudioClip[] meows;
@@ -23,6 +25,9 @@ public class Player : MonoBehaviour {
     public float localDistanceMeters = 0f;
     public Vector3 screenPosition;
 
+    [SerializeField]
+    private TrailRenderer trailRenderer;
+
     NetControllers.DeserializedPlayerMove previousMovement;
     NetControllers.DeserializedPlayerMove targetMovement;
 
@@ -34,6 +39,11 @@ public class Player : MonoBehaviour {
     // Start is called before the first frame update
     void Start() {
         bodyRenderer.material.mainTexture = furTextures.Length == 0 ? new Texture2D(1, 1) : furTextures[id % furTextures.Length];
+
+        if (!IsLocal)
+        {
+            trailRenderer.widthMultiplier = 5f;
+        }
     }
 
     private void OnDestroy() {

@@ -27,6 +27,10 @@ public class Game : MonoBehaviour
     [SerializeField] private Camera observerCamera;
     [SerializeField] private float visibilityDistance = 400f;
 
+    [SerializeField] private Gradient topGradient;
+    [SerializeField] private Gradient botGradient;
+    [SerializeField] private Material levelMat;
+
     WebSocket websocket;
     NetControllers controllers = new NetControllers();
     E_ConnectionState connectionState;
@@ -36,6 +40,8 @@ public class Game : MonoBehaviour
 
     List<string> names = new List<string>();
     Dictionary<int, StandardMissile> liveRemoteMissiles = new Dictionary<int, StandardMissile>();
+
+    private Material skyMat;
 
     [System.Runtime.InteropServices.DllImport("__Internal")]
     private static extern bool checkIfMobile();
@@ -68,6 +74,10 @@ public class Game : MonoBehaviour
     private void Start()
     {
         StartCoroutine(UpdatePlayersVisibility());
+
+        skyMat = Instantiate(RenderSettings.skybox);
+
+        RenderSettings.skybox = skyMat;
     }
 
     public void SpawnMissile(NetControllers.Missile missile) 
@@ -332,6 +342,15 @@ public class Game : MonoBehaviour
         websocket.DispatchMessageQueue();
 #endif
 
+        // 86400 seconds in a day
+        var secondsInDay = 86400f;
+        var time = (float)((System.DateTime.Now.TimeOfDay.TotalSeconds + 3600 * 6) % secondsInDay) / secondsInDay;
+
+        skyMat.SetColor("_Top", topGradient.Evaluate(time));
+        skyMat.SetColor("_Middle", botGradient.Evaluate(time));
+
+        levelMat.SetColor("_Color", botGradient.Evaluate(time));
+
         if (Input.touchCount > 0)
         {
             IsPressing = true;
@@ -351,6 +370,11 @@ public class Game : MonoBehaviour
             IsPressing = Input.GetMouseButton(0);
             MousePosition = Input.mousePosition;
         }
+    }
+
+    public void EliminateMyself()
+    {
+
     }
 
     private void OnApplicationQuit()

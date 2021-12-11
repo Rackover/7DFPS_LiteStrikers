@@ -16,9 +16,14 @@ public class StandardMissile : MonoBehaviour
     [SerializeField]
     private Renderer toHideWhenDetonating;
 
+    [SerializeField]
+    private float detonateDistance = 50f;
+
     private Vector3 velocity;
 
     public Player Owner;
+
+    private List<Player> affectedPlayers = new List<Player>();
 
     // Start is called before the first frame update
     void Start()
@@ -45,8 +50,34 @@ public class StandardMissile : MonoBehaviour
 
     IEnumerator LiveAndDie()
     {
-        yield return new WaitForSeconds(lifespan);
-        Destroy(gameObject);
+        var wait = new WaitForEndOfFrame();
+        var time = Time.time;
+        var sqr = detonateDistance * detonateDistance;
+
+        while(time + lifespan > Time.time)
+        {
+            for (int i = 0; i < Game.i.Players.Count; i++)
+            {
+                var player = Game.i.Players[i];
+                if (player == Owner) continue;
+
+                if (Vector3.SqrMagnitude(player.transform.position - transform.position) < sqr)
+                {
+                    affectedPlayers.Add(player);
+                }
+
+                yield return wait;
+            }
+
+            yield return wait;
+
+            if (affectedPlayers.Count > 0)
+            {
+                break;
+            }
+        }
+
+        Detonate();
     }
 
     private void Detonate()
@@ -58,6 +89,14 @@ public class StandardMissile : MonoBehaviour
 #pragma warning restore CS0618 // Type or member is obsolete
         velocity = Vector3.zero;
         toHideWhenDetonating.enabled = false;
-        Destroy(gameObject, 0f);
+        Destroy(gameObject);
+
+        foreach(var player in affectedPlayers)
+        {
+            if (player == Game.i.LocalPlayer)
+            {
+                Game.i.EliminateMyself();
+            }
+        }
     }
 }

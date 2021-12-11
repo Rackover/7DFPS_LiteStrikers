@@ -56,7 +56,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _BottomMultiplier: 5.04
+    - _BottomMultiplier: 10
     - _BumpScale: 1
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
@@ -67,7 +67,7 @@ Material:
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
-    - _Offset: 0.219
+    - _Offset: 0.67
     - _Parallax: 0.02
     - _Screenspace: 0
     - _SmoothnessTextureChannel: 0
@@ -82,6 +82,6 @@ Material:
     - _Bottom: {r: 0, g: 0, b: 0, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _Middle: {r: 1, g: 0.81175256, b: 0.41037738, a: 1}
-    - _Top: {r: 0.9528302, g: 0.27027267, b: 0.21124065, a: 1}
+    - _Middle: {r: 1, g: 1, b: 1, a: 1}
+    - _Top: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []

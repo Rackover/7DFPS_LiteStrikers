@@ -48,7 +48,7 @@ public class NetControllers : Dictionary<string, Action<NativeWebSocket.WebSocke
 
         if (!player.IsSpawned && playerUpdate.isSpawned)
         {
-            Debug.Log("Spawning player " + player.id);
+            Debug.Log("Spawning player " + player.id +" at "+move.position);
             player.transform.position = move.position;
             player.transform.LookAt(Vector3.zero);
             player.Spawn();

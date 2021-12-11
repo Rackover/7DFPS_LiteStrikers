@@ -62,6 +62,8 @@ public class LocalVectronAnimation : MonoBehaviour
             var emission = speedLinesShuriken.main;
             emission.startColor = Color.Lerp(lowSpeedColor, highSpeedColor, player.movement.SpeedAmount);
             emission.startSpeedMultiplier = player.movement.SpeedAmount* shurikenSpeed;
+
+            speedLinesShuriken.transform.localEulerAngles = Vector3.up * (180f + 20f * playerMovement.VirtualJoystick.x) + Vector3.right * (20f * playerMovement.VirtualJoystick.y); 
         }
     }
 

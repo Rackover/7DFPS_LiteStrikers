@@ -168,7 +168,7 @@ ParticleSystem:
     startSpeed:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 15
+      scalar: 30
       minScalar: 5
       maxCurve:
         serializedVersion: 2
@@ -4916,6 +4916,7 @@ MonoBehaviour:
   isInScreen: 0
   localDistanceMeters: 0
   screenPosition: {x: 0, y: 0, z: 0}
+  trailRenderer: {fileID: 0}
 --- !u!114 &5909940810328024256
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4932,7 +4933,7 @@ MonoBehaviour:
   gravity: 30
   worldCollider: {fileID: 5909940810328024257}
   camera: {fileID: 5909940810373472038}
-  maxBoost: 4.5
+  maxBoost: 3
   boostAcceleration: 1
   rotationSpeed: 3
   trail: {fileID: 5909940810828769419}

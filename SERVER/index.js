@@ -9,9 +9,9 @@ const server = createServer(app);
 const wss = new WebSocket.Server({ server });
 
 const port = 1235;
-const arenaSize = 100;
+const arenaSize = 500;
 const dropAckTimeout = 1;
-const spawnDistance = 10;
+const spawnDistance = 50;
 
 const LOADOUTS =
 {
@@ -116,7 +116,7 @@ server.listen(port, function() {
 });
 
 setInterval(function(){
-    log(Object.values(clients).length+" players currently active on the server\n"+get_serialized_state());
+    log(Object.values(clients).length+" players currently active on the server");
 }, 30000);
 
 function send_state_to(ws){
@@ -149,7 +149,8 @@ function get_stripped_client(client)
 }
 
 function get_spawnpoint(){
-    let randomPoint = {x: arenaSize/2, z:arenaSize/2};
+	const y = 500;
+    let randomPoint = {x: arenaSize/2, y:y, z:arenaSize/2};
     let isOk = false;
     
     while(!isOk){
@@ -158,6 +159,7 @@ function get_spawnpoint(){
         if (!isOk){
             randomPoint = {
                 x: (Math.random()*2 - 1) * arenaSize,
+				y: y,
                 z: (Math.random()*2 - 1) * arenaSize,
             }
         }
@@ -239,8 +241,6 @@ function send_meow_to_everyone(me, ws, data){
 function send_shoot_to_everyone(me, ws, data)
 {
 	data = JSON.parse(data);
-	
-	log("Received shoot from "+me.id+", loadout is "+me.loadout+", data is "+JSON.stringify(data));
 	
 	if (me.loadout == LOADOUTS.LMG)
 	{

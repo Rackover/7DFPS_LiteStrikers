@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: M_WaterPlane
-  m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}
+  m_Shader: {fileID: 4800000, guid: 5dc13cd06cf2b2e47aafae1a462d9613, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -55,6 +55,14 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _Texture:
+        m_Texture: {fileID: 2800000, guid: 3da97c7446531544da09b8663a7e466d, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _texcoord:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Floats:
     - _Blink: 0
     - _BumpScale: 1
@@ -68,7 +76,9 @@ Material:
     - _Metallic: 1
     - _Mode: 0
     - _OcclusionStrength: 1
-    - _PanSpeed: 0.8
+    - _OpacityMask: 0.5
+    - _OpacityMultiplier: 0.85
+    - _PanSpeed: 0.017
     - _Parallax: 0.02
     - _Scale: 0.017
     - _ScaleX: 1
@@ -77,6 +87,13 @@ Material:
     - _SpecularHighlights: 1
     - _SpikeHeight: 0.1
     - _SrcBlend: 1
+    - _TexScale: 5
+    - _TransAmbient: 0.2
+    - _TransDirect: 1
+    - _TransNormalDistortion: 0.1
+    - _TransScattering: 2
+    - _TransShadow: 0.9
+    - _Translucency: 1
     - _UVSec: 0
     - _ZWrite: 1
     - __dirty: 0

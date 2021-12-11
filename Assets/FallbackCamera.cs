@@ -6,7 +6,8 @@ public class FallbackCamera : MonoBehaviour
 {
 
     [SerializeField] private float height = 200f;
-    
+    [SerializeField] private float lookAt = 500f;
+    [SerializeField] private float range = 1000f;
     private AudioListener listener;
     private new Camera camera;
 
@@ -38,10 +39,10 @@ public class FallbackCamera : MonoBehaviour
 
         if (active)
         {
-            transform.position = new Vector3(Mathf.Sin(Time.time * 0.1f) * 400f, height, Mathf.Cos(Time.time * 0.1f) * 400f);
+            transform.position = new Vector3(Mathf.Sin(Time.time * 0.1f) * range, height, Mathf.Cos(Time.time * 0.1f) * range);
 
 
-            transform.LookAt(Vector3.zero);
+            transform.LookAt(Vector3.up * lookAt);
         }
     }
 }
