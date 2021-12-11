@@ -5,6 +5,12 @@ using UnityEngine;
 public class LocalVectronAnimation : MonoBehaviour
 {
     [SerializeField]
+    Color highSpeedColor = new Color(1f, 1f, 1f, 0.5f);
+
+    [SerializeField]
+    ParticleSystem speedLinesShuriken;
+
+    [SerializeField]
     Player player;
 
     [SerializeField]
@@ -19,6 +25,10 @@ public class LocalVectronAnimation : MonoBehaviour
     [SerializeField]
     Dictionary<Weapon.ELoadout, MeshRenderer> loadoutsWeaps = new Dictionary<Weapon.ELoadout, MeshRenderer>();
 
+    Color lowSpeedColor = new Color(1f, 1f, 1f, 0f);
+
+    float shurikenSpeed;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -26,6 +36,8 @@ public class LocalVectronAnimation : MonoBehaviour
         {
             transform.parent = null;
             transform.position = player.transform.position;
+
+            shurikenSpeed = speedLinesShuriken.main.startSpeedMultiplier;
         }
         else 
         { 
@@ -38,12 +50,18 @@ public class LocalVectronAnimation : MonoBehaviour
         if (player.IsSpawned && !visualToHide.activeSelf)
         {
             UpdateLoadout();
-
             visualToHide.SetActive(true);
         }
         else if (!player.IsSpawned && visualToHide.activeSelf)
         {
             visualToHide.SetActive(false);
+        }
+
+        if (player.IsSpawned)
+        {
+            var emission = speedLinesShuriken.main;
+            emission.startColor = Color.Lerp(lowSpeedColor, highSpeedColor, player.movement.SpeedAmount);
+            emission.startSpeedMultiplier = player.movement.SpeedAmount* shurikenSpeed;
         }
     }
 

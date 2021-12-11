@@ -177,6 +177,7 @@ public class Game : MonoBehaviour
         connectionState = E_ConnectionState.CONNECTING;
 
         var addr = "ws://rx.louve.systems:1235";
+        addr = "ws://localhost:1235"; 
 
         //#if DEBUG
         //        addr = "wss://microstrikers.louve.systems";

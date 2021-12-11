@@ -5131,7 +5131,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c184da8877cc4644cbbb7568aa58354f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 200
+  speed: 400
   lifespan: 2.5
   explosionShuriken: {fileID: 6507197391214411321}
   toHideWhenDetonating: {fileID: 320685365409187831}
