@@ -97,7 +97,7 @@ public class HUD : MonoBehaviour
         for (int i = 0; i < Game.i.Players.Count; i++)
         {
             var player = Game.i.Players[i];
-            sb.AppendLine($"{Game.i.GetNameForId(player.id)}: {Game.i.GetScore(player.id)}");
+            sb.AppendLine($"{Game.i.GetNameForId(player.id).ToUpper(), -12}: {Game.i.GetScore(player.id)}");
         }
 
         scoreInfo.text = sb.ToString();

@@ -262,9 +262,9 @@ AudioSource:
   Priority: 128
   DopplerLevel: 0
   MinDistance: 1
-  MaxDistance: 2000
+  MaxDistance: 500
   Pan2D: 0
-  rolloffMode: 0
+  rolloffMode: 1
   BypassEffects: 0
   BypassListenerEffects: 0
   BypassReverbZones: 0
@@ -5260,11 +5260,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c184da8877cc4644cbbb7568aa58354f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 400
+  speed: 300
   lifespan: 2.5
   explosionShuriken: {fileID: 6507197391214411321}
   toHideWhenDetonating: {fileID: 320685365409187831}
-  detonateDistance: 50
+  detonateDistance: 10
   detonateClip: {fileID: 8300000, guid: 76fd8bc75968f3c4e938b25e4988db6a, type: 3}
   generalSource: {fileID: 3141929968187422410}
   body: {fileID: 1572886834806887378}
@@ -5309,7 +5309,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 8300000, guid: 881a9ed5639eca14a9907bae09a66d64, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 1
+  m_Volume: 0.5
   m_Pitch: 1
   Loop: 1
   Mute: 0

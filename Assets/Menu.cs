@@ -48,6 +48,12 @@ public class Menu : MonoBehaviour
         OnReset?.Invoke();
     }
 
+    private void OnDestroy()
+    {
+        Debug.Log($"OnDestroy " + name);
+        OnReset -= Menu_OnReset;
+    }
+
     void Start()
     {
         titleBasePosition = title.position;

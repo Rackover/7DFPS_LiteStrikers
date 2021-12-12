@@ -97,7 +97,8 @@ public class StandardMissile : MonoBehaviour
     private void Detonate()
     {
         generalSource.transform.parent = null;
-        generalSource.PlayOneShot(detonateClip);
+        generalSource.pitch = 0.9f + Random.value * 0.2f;
+        generalSource.PlayOneShot(detonateClip, 0.3f);
         Destroy(generalSource.gameObject, 3f);
 
         explosionShuriken.Play();

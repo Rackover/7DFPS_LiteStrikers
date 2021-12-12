@@ -15,8 +15,6 @@ public class Player : MonoBehaviour {
     public AudioSource source;
     public new Camera camera;
     public AudioClip[] meows;
-    public Texture[] furTextures;
-    public Renderer bodyRenderer;
     public Weapon weapon;
     public GameObject ignoreCollision { get; set; }
 
@@ -55,20 +53,11 @@ public class Player : MonoBehaviour {
 
     // Start is called before the first frame update
     void Start() {
-        bodyRenderer.material.mainTexture = furTextures.Length == 0 ? new Texture2D(1, 1) : furTextures[id % furTextures.Length];
-
         if (!IsLocal)
         {
             trailRenderer.widthMultiplier = 5f;
             Destroy(GetComponent<Rigidbody>());
             source.spatialBlend = 1f;
-        }
-    }
-
-    private void OnDestroy() {
-        if (bodyRenderer)
-        {
-            Destroy(bodyRenderer.material);
         }
     }
 

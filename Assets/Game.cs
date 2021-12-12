@@ -260,7 +260,9 @@ public class Game : MonoBehaviour
 
                 if (controllers.ContainsKey(controller))
                 {
+                    Debug.Log($"Executing {controller}");
                     controllers[controller].Invoke(websocket, message);
+                    Debug.Log($"Done!");
                 }
                 else
                 {
@@ -422,11 +424,22 @@ public class Game : MonoBehaviour
 
     public void DisconnectPlayer(int id)
     {
-        var player = Players.Find(o => o.id == id);
-        if (player)
+        try
         {
-            Destroy(player.gameObject);
-            Players.Remove(player);
+            Debug.Log("Finding player");
+            var player = Players.Find(o => o.id == id);
+            if (player)
+            {
+                Debug.Log("Found player!");
+                Players.RemoveAll(o => o.id == id);
+                Debug.Log("Removed player!");
+                Destroy(player.gameObject);
+                Debug.Log("Destroyed player!");
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.Log(e);
         }
     }
 }

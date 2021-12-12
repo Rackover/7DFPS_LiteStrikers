@@ -9,9 +9,9 @@ const server = createServer(app);
 const wss = new WebSocket.Server({ server });
 
 const port = 4035;
-const arenaSize = 700;
+const arenaSize = 850;
 const dropAckTimeout = 1;
-const spawnDistance = 50;
+const spawnDistance = 300;
 
 const LOADOUTS =
 {
@@ -149,19 +149,15 @@ function get_stripped_client(client)
 }
 
 function get_spawnpoint(){
-	const y = 500;
-    let randomPoint = {x: arenaSize/2, y:y, z:arenaSize/2};
+    const y = 500;
+    let randomPoint = {x: Math.sin(Math.random()*3.14) * arenaSize, y:y, z:Math.cos(Math.random()*3.14) * arenaSize};
     let isOk = false;
     
     while(!isOk){
         isOk = get_nearest_distance_with_any_player(randomPoint) > spawnDistance;
         
         if (!isOk){
-            randomPoint = {
-                x: (Math.random()*2 - 1) * arenaSize,
-				y: y,
-                z: (Math.random()*2 - 1) * arenaSize,
-            }
+			randomPoint = {x: Math.sin(Math.random()*3.14) * arenaSize, y:y, z:Math.cos(Math.random()*3.14) * arenaSize};
         }
     }
     

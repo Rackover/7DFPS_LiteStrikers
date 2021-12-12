@@ -14,11 +14,14 @@ public class HUDTargetsManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        var playersWhoCouldNeedTargets = Game.i.Players.FindAll(o => !o.IsLocal);
+
         // ADd missing targets
-        while(activeTargets.Count < Game.i.Players.Count-1)
+        if(activeTargets.Count < playersWhoCouldNeedTargets.Count)
         {
-            List<Player> playersWithoutTarget = new List<Player>(Game.i.Players);
-            playersWithoutTarget.RemoveAll(o => o.IsLocal || activeTargets.Find(t => t.Player == o) != null);
+            Debug.Log($"Adding missing targets!");
+            List<Player> playersWithoutTarget = new List<Player>(playersWhoCouldNeedTargets);
+            playersWithoutTarget.RemoveAll(o => activeTargets.Find(t => t.Player == o) != null);
 
             foreach(var player in playersWithoutTarget)
             {
@@ -32,9 +35,10 @@ public class HUDTargetsManager : MonoBehaviour
         }
 
         // Remove extra targets
-        while(activeTargets.Count != 0 && activeTargets.Count > Game.i.Players.Count-1)
+        // IF but it should be a while...
+        if (activeTargets.Count > playersWhoCouldNeedTargets.Count)
         {
-            List<HUDTarget> targets = new List<HUDTarget>(activeTargets);
+            var targets = activeTargets.ToArray();
             foreach (var target in targets)
             {
                 if (target.Player == null)
@@ -44,6 +48,7 @@ public class HUDTargetsManager : MonoBehaviour
                 }
             }
         }
+
     }
 
     HUDTarget GetTarget()
@@ -60,6 +65,12 @@ public class HUDTargetsManager : MonoBehaviour
 
     void RemoveTarget(HUDTarget target)
     {
+        if (target == null)
+        {
+            activeTargets.RemoveAll(o => o == null);
+            return;
+        }
+
         activeTargets.Remove(target);
         target.gameObject.SetActive(false);
         pooledTargets.Enqueue(target);
