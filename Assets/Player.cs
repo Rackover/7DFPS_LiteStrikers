@@ -15,6 +15,7 @@ public class Player : MonoBehaviour {
     public Texture[] furTextures;
     public Renderer bodyRenderer;
     public Weapon weapon;
+    public GameObject ignoreCollision;
 
     public PlayerMovement movement;
     public int id = 0;
@@ -24,6 +25,8 @@ public class Player : MonoBehaviour {
     public bool isInScreen = false;
     public float localDistanceMeters = 0f;
     public Vector3 screenPosition;
+
+    public int lastLocalKiller;
 
     [SerializeField]
     private TrailRenderer trailRenderer;
@@ -43,6 +46,7 @@ public class Player : MonoBehaviour {
         if (!IsLocal)
         {
             trailRenderer.widthMultiplier = 5f;
+            Destroy(GetComponent<Rigidbody>());
         }
     }
 
@@ -63,6 +67,11 @@ public class Player : MonoBehaviour {
 
         IsSpawned = true;
 
+    }
+
+    public void Eliminate()
+    {
+        IsSpawned = false;
     }
 
     public void SetLoadout(Weapon.ELoadout loadout)

@@ -48,17 +48,18 @@ public class PlayerMovement : MonoBehaviour
     {
         if (IsLocal)
         {
+            var mousePosition = Game.i.MousePosition;
+
+            virtualStick = new Vector2(mousePosition.x / Screen.width, mousePosition.y / Screen.height) * 2 - Vector2.one;
+
             if (IsSpawned)
             {
                 //var inputMouse = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"));
                 //transform.Rotate(transform.up * inputMouse.x * Time.deltaTime * mouseSensitivity * 1.5f);
 
-                var mousePosition = Game.i.MousePosition;
                 isBoosting = Game.i.IsPressing;
 
-                virtualStick = new Vector2(mousePosition.x / Screen.width, mousePosition.y / Screen.height) * 2 - Vector2.one;
-
-                currentBoost = Mathf.Clamp(currentBoost + boostAcceleration * maxBoost * Time.deltaTime * (isBoosting ? 1f : -1f), 0f, maxBoost);
+                currentBoost = Mathf.Clamp(currentBoost + boostAcceleration * maxBoost * Time.deltaTime * (isBoosting ? 1f : -0.33f), 0f, maxBoost);
 
                 //if (Input.GetButtonDown("Meow")) {
                 //    Game.i.SendMeow();
@@ -80,7 +81,7 @@ public class PlayerMovement : MonoBehaviour
                 if (transform.position.y < killZ)
                 {
                     Debug.Log($"Kill Z was hit, killing myself!");
-                    Game.i.EliminateMyself();
+                    Game.i.EliminateMyself(playerScript);
                     velocity = Vector3.zero;
                     verticalGravityVelocity = 0f;
                 }

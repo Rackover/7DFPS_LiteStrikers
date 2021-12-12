@@ -40,7 +40,7 @@ public class StandardMissile : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject == Owner.gameObject)
+        if (collision.gameObject == Owner.ignoreCollision)
         {
             return;
         }
@@ -84,9 +84,7 @@ public class StandardMissile : MonoBehaviour
     {
         explosionShuriken.Play();
         explosionShuriken.transform.parent = null;
-#pragma warning disable CS0618 // Type or member is obsolete
-        Destroy(explosionShuriken.gameObject, explosionShuriken.startLifetime);
-#pragma warning restore CS0618 // Type or member is obsolete
+        Destroy(explosionShuriken.gameObject, 5f);
         velocity = Vector3.zero;
         toHideWhenDetonating.enabled = false;
         Destroy(gameObject);
@@ -95,7 +93,8 @@ public class StandardMissile : MonoBehaviour
         {
             if (player == Game.i.LocalPlayer)
             {
-                Game.i.EliminateMyself();
+                Game.i.EliminateMyself(Owner);
+                break;
             }
         }
     }

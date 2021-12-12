@@ -25,7 +25,7 @@ public class Weapon : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (player.IsLocal && player.IsSpawned && player.movement.IsBoosting)
+        if (player.IsLocal && player.IsSpawned && (player.movement.IsBoosting || player.movement.SpeedAmount > 0.5f))
         {
             if (Input.GetMouseButton(1))
             {

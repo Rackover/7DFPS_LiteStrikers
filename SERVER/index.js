@@ -377,16 +377,19 @@ function send_disconnect_player(id){
 }
 
 function eliminate_myself(me, ws, data){
-		
-	data = JSON.parse(data);
-	
-	const killerID = data.killer;
+			
+	const killerID = parseInt(data);
 	
 	if (!clientsScores[killerID]){
 		clientsScores[killerID] = 0;
 	}
 	
-	clientsScores[killerID]++;
+	if (killerID != me.id)
+	{
+		clientsScores[killerID]++;
+	}
+	
+	log("Client scores are now "+JSON.stringify(clientsScores)+" because "+killerID+" killed someone");
 	
 	me.isSpawned = false;
 		

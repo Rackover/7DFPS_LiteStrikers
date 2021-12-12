@@ -5,6 +5,9 @@ using UnityEngine;
 public class LocalVectronAnimation : MonoBehaviour
 {
     [SerializeField]
+    CollisionEventTransmitter collisions;
+
+    [SerializeField]
     Color highSpeedColor = new Color(1f, 1f, 1f, 0.5f);
 
     [SerializeField]
@@ -38,10 +41,27 @@ public class LocalVectronAnimation : MonoBehaviour
             transform.position = player.transform.position;
 
             shurikenSpeed = speedLinesShuriken.main.startSpeedMultiplier;
+
+            collisions.onColliderEnter += Collisions_onColliderEnter;
+
+            player.ignoreCollision = collisions.gameObject;
         }
         else 
-        { 
+        {
+            Destroy(visualToHide.GetComponentInChildren<Rigidbody>());
+            Destroy(collisions);
+            Destroy(visualToHide.GetComponentInChildren<Collider>());
             Destroy(this); // script
+        }
+    }
+
+    private void Collisions_onColliderEnter(Collision obj)
+    {
+        if (obj.gameObject.GetComponent<StandardMissile>()) return;
+        
+        if (player.IsSpawned)
+        {
+            Game.i.EliminateMyself(player);
         }
     }
 

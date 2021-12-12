@@ -21,7 +21,7 @@ public class Game : MonoBehaviour
 
     public float killZ;
 
-    [SerializeField] private MeshRenderer waterPlane;
+    [SerializeField] private MeshRenderer[] waterPlanes;
     [SerializeField] private bool forceMobile;
     [SerializeField] private GameObject playerPrefab;
     [SerializeField] private Camera observerCamera;
@@ -42,6 +42,7 @@ public class Game : MonoBehaviour
     Dictionary<int, StandardMissile> liveRemoteMissiles = new Dictionary<int, StandardMissile>();
 
     private Material skyMat;
+    private Material waterPlaneMat;
 
     [System.Runtime.InteropServices.DllImport("__Internal")]
     private static extern bool checkIfMobile();
@@ -59,6 +60,12 @@ public class Game : MonoBehaviour
         i = this;
 
         //waterPlane.transform.position  = Vector3.down* killZ;
+
+        waterPlaneMat = Instantiate(waterPlanes[0].sharedMaterial);
+        for (int i = 0; i < waterPlanes.Length; i++)
+        {
+            waterPlanes[i].sharedMaterial = waterPlaneMat;
+        }
 
         names.AddRange(new string[]
         {
@@ -346,6 +353,8 @@ public class Game : MonoBehaviour
         var secondsInDay = 86400f;
         var time = (float)((System.DateTime.Now.TimeOfDay.TotalSeconds + 3600 * 6) % secondsInDay) / secondsInDay;
 
+        waterPlaneMat.SetFloat("_Brightness", 2f * time + 0.5f);
+
         skyMat.SetColor("_Top", topGradient.Evaluate(time));
         skyMat.SetColor("_Middle", botGradient.Evaluate(time));
 
@@ -372,9 +381,12 @@ public class Game : MonoBehaviour
         }
     }
 
-    public void EliminateMyself()
+    public void EliminateMyself(Player killer)
     {
-
+        Debug.Log($"Local player was eliminated by " + killer.name + "!");
+        LocalPlayer.lastLocalKiller = killer.id;
+        LocalPlayer.Eliminate();
+        websocket.SendText(NetControllers.PROTOCOL_ELIMINATE_SELF+killer.id);
     }
 
     private void OnApplicationQuit()
