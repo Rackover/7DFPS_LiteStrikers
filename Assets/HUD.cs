@@ -14,6 +14,9 @@ public class HUD : MonoBehaviour
     float horizonMaxSize = 128;
 
     [SerializeField]
+    TextMeshProUGUI killFeed;
+
+    [SerializeField]
     MaskableGraphic[] crosshair;
 
     [SerializeField]
@@ -41,6 +44,8 @@ public class HUD : MonoBehaviour
     Vector2 innerAimBestSize;
     float horizonBestSize;
 
+    bool hasRegisteredEvent = false;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -49,6 +54,8 @@ public class HUD : MonoBehaviour
         horizonBestSize = horizon.rectTransform.sizeDelta.y;
 
         Cursor.lockState = CursorLockMode.Confined;
+
+        killFeed.alpha = 0f;
     }
 
     // Update is called once per frame
@@ -57,9 +64,15 @@ public class HUD : MonoBehaviour
         canvas.enabled = Game.i.IsConnected && Game.i.LocalPlayer && Game.i.LocalPlayer.IsSpawned;
 
         if (canvas.enabled == false) return;
+
+        if (!hasRegisteredEvent)
+        {
+            Game.i.LocalPlayer.OnKilledSomeone += LocalPlayer_OnKilledSomeone;
+        }
         
         Cursor.visible = false;
         group.alpha = Game.i.LocalPlayer.movement.SpeedAmount;
+        killFeed.alpha = Mathf.Clamp01(killFeed.alpha - Time.deltaTime * 0.33f);
 
         var delta = Mathf.Sin(Game.i.LocalPlayer.movement.SpeedAmount * Mathf.PI / 2f);
 
@@ -88,5 +101,11 @@ public class HUD : MonoBehaviour
         }
 
         scoreInfo.text = sb.ToString();
+    }
+
+    private void LocalPlayer_OnKilledSomeone(int obj)
+    {
+        killFeed.alpha = 2f;
+        killFeed.text = $"ELIMINATED {Game.i.GetNameForId(obj).ToUpper()}";
     }
 }

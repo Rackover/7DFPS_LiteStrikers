@@ -19,6 +19,14 @@ public class Menu : MonoBehaviour
 
     [SerializeField] RectTransform title;
 
+    [SerializeField] AudioClip validateClip;
+
+    [SerializeField] AudioSource music;
+
+    [SerializeField] AudioSource beep;
+
+    [SerializeField] float volume;
+
     float holdAccumulator = 0f;
 
     float maxHold = 3f;
@@ -51,6 +59,7 @@ public class Menu : MonoBehaviour
 
     private void Menu_OnReset()
     {
+        beep.volume = 0f;
         holdAccumulator = 0f;
         isAtInitialStep = true;
         title.position = titleBasePosition;
@@ -63,8 +72,11 @@ public class Menu : MonoBehaviour
 
         canvas.enabled = !Game.i.IsConnected || !Game.i.LocalPlayer.IsSpawned;
 
+        music.volume = Mathf.Clamp(music.volume + (canvas.enabled ? 1f : -1f) * Time.deltaTime, 0f, volume);
+
         if (hasSpawnedOnce && Game.i.LocalPlayer.IsSpawned && isWaitingOnServer)
         {
+            beep.volume = 0f;
             holdAccumulator = 0f;
             isWaitingOnServer = false;
         }
@@ -72,19 +84,22 @@ public class Menu : MonoBehaviour
 
         if (canvas.enabled == false) return;
 
-        holdClickText.alpha = Mathf.Clamp01(Mathf.Floor((Time.time * (isAnimating ? 4f : (isAtInitialStep ? 1f : 8f))) % 2f));
-
         if (isAnimating)
         {
             holdClickText.color = Color.yellow;
             holdClickText.text = "WAIT...";
         }
-
-        if (!Game.i.IsConnected)
+        else if (!Game.i.IsConnected)
         {
             holdClickText.color = Color.yellow;
             holdClickText.text = "CONNECTING TO SERVER...";
         }
+        else
+        {
+            holdClickText.color = Color.white;
+        }
+
+        holdClickText.alpha = Mathf.Clamp01(Mathf.Floor((Time.time * (isAnimating ? 4f : (isAtInitialStep ? 1f : 8f))) % 2f));
 
         if (isWaitingOnServer) { return; }
 
@@ -96,6 +111,8 @@ public class Menu : MonoBehaviour
 
         if (isAtInitialStep)
         {
+            beep.volume = 0f;
+
             if (Game.i.IsMobile)
             {
                 holdClickText.text = @"TOUCH ANYWHERE TO BEGIN";
@@ -114,6 +131,7 @@ public class Menu : MonoBehaviour
                     .OnComplete(() => { isAnimating = false; })
                     .Play();
 
+                Game.i.AudioSource.PlayOneShot(validateClip);
             }
         }
         else
@@ -122,6 +140,9 @@ public class Menu : MonoBehaviour
 
             accumulatorRectangle.rectTransform.sizeDelta = Vector2.one * 400f * (1f - holdAccumulator / maxHold) + (Game.i.IsPressing ? Vector2.zero : Vector2.one * 10f * Mathf.Sin(Time.time * 10f));
             accumulatorRectangle.rectTransform.localEulerAngles = Vector3.forward * 180f * (holdAccumulator / maxHold);
+
+            beep.volume = beep.volume + (isValid ? 1f : -1f) * Time.deltaTime * 3f;
+            beep.pitch = holdAccumulator / maxHold + 0.5f;
 
             if (isValid)
             {
@@ -143,7 +164,7 @@ public class Menu : MonoBehaviour
 
             if (hasSpawnedOnce)
             {
-                holdClickText.text = (Game.i.LocalPlayer.lastLocalKiller == Game.i.LocalPlayer.id ? "SELF-DESTRUCT! " : $"ELIMINATED BY {Game.i.GetNameForId(Game.i.LocalPlayer.lastLocalKiller).ToUpper()} ") + $"{(Game.i.IsMobile ? "TOUCH" : "CLICK")} CENTER AND HOLD FIRMLY";
+                holdClickText.text = (Game.i.LocalPlayer.lastLocalKiller == Game.i.LocalPlayer.id ? "SELF-DESTRUCT! " : $"ELIMINATED BY {Game.i.GetNameForId(Game.i.LocalPlayer.lastLocalKiller).ToUpper()} - ") + $"{(Game.i.IsMobile ? "TOUCH" : "CLICK")} CENTER AND HOLD FIRMLY";
             }
             else
             {

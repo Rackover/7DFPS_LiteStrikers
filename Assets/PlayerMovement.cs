@@ -9,7 +9,6 @@ public class PlayerMovement : MonoBehaviour
     public Vector2 VirtualJoystick => virtualStick;
 
     [SerializeField] private float gravity = 20f;
-    [SerializeField] private SphereCollider worldCollider;
     [SerializeField] private new PlayerCamera camera;
     private float killZ => Game.i.killZ;
     [SerializeField] private float maxBoost = 40f;
@@ -22,6 +21,10 @@ public class PlayerMovement : MonoBehaviour
     public float Pitch101 { private set; get; }
 
     public float VelocityMagnitude => velocity.magnitude;
+
+    public Vector3 Velocity => velocity;
+
+    public float VelocityWithGravityMagnitude => VelocityMagnitude + verticalGravityVelocity;
 
     public float Speed => currentBoost;
 

@@ -11,6 +11,9 @@ public class Weapon : MonoBehaviour
     [SerializeField] float delayBetweenTripleShoot = 0.1f;
     [SerializeField] Transform parentVectron;
 
+    [SerializeField]
+    AudioClip launchClip;
+
     public ELoadout Loadout { get; set; } = ELoadout.TRIPLE;
 
     bool isFiring = false;
@@ -39,6 +42,8 @@ public class Weapon : MonoBehaviour
         var missile = Instantiate(missilePrefab, parentVectron.position + parentVectron.forward * 2f, parentVectron.rotation);
         missile.transform.parent = null;
         missile.Owner = player;
+
+        player.source.PlayOneShot(launchClip, 0.3f);
 
         return missile.GetComponent<StandardMissile>();
     }

@@ -399,6 +399,7 @@ namespace NativeWebSocket
             }
             catch (Exception ex)
             {
+                Debug.Log(ex);
                 OnError?.Invoke(ex.Message);
                 OnClose?.Invoke(WebSocketCloseCode.Abnormal);
             }

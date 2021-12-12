@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -17,12 +18,11 @@ public class Player : MonoBehaviour {
     public Texture[] furTextures;
     public Renderer bodyRenderer;
     public Weapon weapon;
-    public GameObject ignoreCollision;
+    public GameObject ignoreCollision { get; set; }
 
     public PlayerMovement movement;
     public int id = 0;
     public float catchUpSpeed = 4f;
-    public TextMesh textMesh;
 
     public bool isInScreen = false;
     public float localDistanceMeters = 0f;
@@ -35,6 +35,14 @@ public class Player : MonoBehaviour {
 
     [SerializeField]
     private TrailRenderer trailRenderer;
+
+    [SerializeField]
+    private AudioClip launchClip;
+
+    [SerializeField]
+    private AudioClip dieClip;
+
+    public event Action<int> OnKilledSomeone;
 
     NetControllers.DeserializedPlayerMove previousMovement;
     NetControllers.DeserializedPlayerMove targetMovement;
@@ -53,6 +61,7 @@ public class Player : MonoBehaviour {
         {
             trailRenderer.widthMultiplier = 5f;
             Destroy(GetComponent<Rigidbody>());
+            source.spatialBlend = 1f;
         }
     }
 
@@ -69,10 +78,16 @@ public class Player : MonoBehaviour {
 
     public void Spawn()
     {
-        if (IsSpawned) Debug.LogError("?? Spawned me twice?");
+        if (IsSpawned)
+        {
+            Debug.LogError("?? Spawned me twice?");
+
+            return;
+        }
+
+        source.PlayOneShot(launchClip, 0.5f);
 
         WasSpawnedOnce = true;
-
         IsSpawned = true;
 
     }
@@ -83,9 +98,16 @@ public class Player : MonoBehaviour {
         {
             eliminationParticleSystem?.Play();
             deathTime = Time.time;
+
+            source.PlayOneShot(dieClip);
         }
 
         IsSpawned = false;
+    }
+
+    public void AcknowledgeKill(int killedId)
+    {
+        OnKilledSomeone?.Invoke(killedId);
     }
 
     public void SetLoadout(Weapon.ELoadout loadout)

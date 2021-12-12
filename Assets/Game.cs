@@ -11,6 +11,8 @@ public class Game : MonoBehaviour
     public List<Player> Players { get; set; } = new List<Player>();
     public Player LocalPlayer { get; private set; }
 
+    public AudioSource AudioSource => LocalPlayer && LocalPlayer.IsSpawned ? LocalPlayer.source : source;
+
     public Vector2 MousePosition;
 
     public bool IsPressing { get; private set; }
@@ -38,6 +40,11 @@ public class Game : MonoBehaviour
     E_ConnectionState connectionState;
     Dictionary<int, int> scores = new Dictionary<int, int>();
 
+    [SerializeField] private int timeOffset;
+
+    const float secondsInDay = 86400f;
+    float Time => (float)((System.DateTime.Now.TimeOfDay.TotalSeconds + 3600 * 6 + timeOffset) % secondsInDay) / secondsInDay;
+
     enum E_ConnectionState { CONNECTING, ERROR, OK };
 
     List<string> names = new List<string>();
@@ -45,6 +52,8 @@ public class Game : MonoBehaviour
 
     private Material skyMat;
     private Material waterPlaneMat;
+
+    [SerializeField] private AudioSource source;
 
     [System.Runtime.InteropServices.DllImport("__Internal")]
     private static extern bool checkIfMobile();
@@ -60,6 +69,8 @@ public class Game : MonoBehaviour
     void Awake()
     {
         i = this;
+
+        Debug.Log(Mathf.Floor(Time * 100f));
 
         //waterPlane.transform.position  = Vector3.down* killZ;
 
@@ -113,7 +124,7 @@ public class Game : MonoBehaviour
         {
             var missileScript = owner.weapon.SpawnMissile();
             missileScript.transform.position = new Vector3(missile.position.x, missile.position.y, missile.position.z);
-            missileScript.transform.rotation = new Quaternion(missile.initialRotation[0], missile.initialRotation[1], missile.initialRotation[2], missile.initialRotation[2]);
+            missileScript.transform.rotation = new Quaternion(missile.initialRotation[0], missile.initialRotation[1], missile.initialRotation[2], missile.initialRotation[3]);
         }
     }
 
@@ -194,8 +205,13 @@ public class Game : MonoBehaviour
                 IsConnected = false;
             }
 
-            websocket?.CancelConnection();
-            var _ = websocket?.Close();
+            try
+            {
+                websocket?.CancelConnection();
+                var _ = websocket?.Close();
+            }
+            catch { }
+                
             InitWebSock();
             Debug.Log($"Waiting for connection");
             yield return new WaitForSeconds(4f);
@@ -207,10 +223,11 @@ public class Game : MonoBehaviour
         connectionState = E_ConnectionState.CONNECTING;
 
         var addr = "ws://rx.louve.systems:1235";
-        addr = "ws://localhost:1235"; 
+        //addr = "ws://localhost:1235";
+
+        addr = "wss://pocketstrikers.louve.systems";
 
         //#if DEBUG
-        //        addr = "wss://microstrikers.louve.systems";
         //#endif
 
         websocket = new WebSocket(addr);
@@ -360,8 +377,7 @@ public class Game : MonoBehaviour
 #endif
 
         // 86400 seconds in a day
-        var secondsInDay = 86400f;
-        var time = (float)((System.DateTime.Now.TimeOfDay.TotalSeconds + 3600 * 6) % secondsInDay) / secondsInDay;
+        var time = Time;
 
         waterPlaneMat.SetFloat("_Brightness", 2f * time + 0.5f);
 
@@ -410,6 +426,7 @@ public class Game : MonoBehaviour
         if (player)
         {
             Destroy(player.gameObject);
+            Players.Remove(player);
         }
     }
 }

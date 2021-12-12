@@ -107,10 +107,23 @@ public class NetControllers : Dictionary<string, Action<NativeWebSocket.WebSocke
     void UpdateScores(NativeWebSocket.WebSocket ws, string data) {
         var state = JsonConvert.DeserializeObject<ScoreInfo>(data);
 
+        bool localIsKiller = false;
+
         if (state.scores != null)
         {
             foreach (var k in state.scores.Keys)
             {
+                if (Game.i.LocalPlayer && k == Game.i.LocalPlayer.id)
+                {
+                    var oldScore = Game.i.GetScore(k);
+
+                    if (state.scores[k] > oldScore)
+                    {
+                        // I am a killer! Looking forward to player updates
+                        localIsKiller = true;
+                    }
+                }
+
                 Game.i.SetScore(k, state.scores[k]);
             }
         }
@@ -120,6 +133,23 @@ public class NetControllers : Dictionary<string, Action<NativeWebSocket.WebSocke
             for (int i = 0; i < state.playerUpdates.Length; i++)
             {
                 var pu = state.playerUpdates[i];
+                
+                if (localIsKiller)
+                {
+                    if (pu.isSpawned == false && Game.i.GetPlayerById(pu.id)?.IsSpawned == true)
+                    {
+                        if (pu.id == Game.i.LocalPlayer.id)
+                        {
+                            // 😒
+                        }
+                        else
+                        {
+                            // I killed them!
+                            Game.i.LocalPlayer.AcknowledgeKill(pu.id);
+                        }
+                    }
+                }
+
                 ReceivePlayerUpdate(pu);
             }
         }

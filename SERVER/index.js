@@ -8,7 +8,7 @@ const app = express();
 const server = createServer(app);
 const wss = new WebSocket.Server({ server });
 
-const port = 1235;
+const port = 4035;
 const arenaSize = 700;
 const dropAckTimeout = 1;
 const spawnDistance = 50;
@@ -384,7 +384,7 @@ function eliminate_myself(me, ws, data){
 		clientsScores[killerID] = 0;
 	}
 	
-	if (killerID != me.id)
+	if (killerID != me.id && me.isSpawned)
 	{
 		clientsScores[killerID]++;
 	}

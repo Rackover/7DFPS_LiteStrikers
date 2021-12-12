@@ -19,9 +19,20 @@ public class StandardMissile : MonoBehaviour
     [SerializeField]
     private float detonateDistance = 50f;
 
+    [SerializeField]
+    private AudioClip detonateClip;
+
+    [SerializeField]
+    private AudioSource generalSource;
+
+    [SerializeField]
+    private Rigidbody body;
+
+    public AudioSource Source => generalSource;
+
     private Vector3 velocity;
 
-    public Player Owner;
+    public Player Owner { get; set; }
 
     private List<Player> affectedPlayers = new List<Player>();
 
@@ -29,13 +40,15 @@ public class StandardMissile : MonoBehaviour
     void Start()
     {
         velocity = transform.forward * speed;
-        StartCoroutine(LiveAndDie());
-    }
 
-    // Update is called once per frame
-    void FixedUpdate()
-    {
-        transform.position += velocity * Time.deltaTime;
+        body.velocity = velocity;
+
+        if (Owner == Game.i.LocalPlayer)
+        {
+            GetComponent<AudioSource>().volume = 0.3f;
+        }
+
+        StartCoroutine(LiveAndDie());
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -59,6 +72,7 @@ public class StandardMissile : MonoBehaviour
             for (int i = 0; i < Game.i.Players.Count; i++)
             {
                 var player = Game.i.Players[i];
+                if (player == null) continue;
                 if (player == Owner) continue;
 
                 if (Vector3.SqrMagnitude(player.transform.position - transform.position) < sqr)
@@ -82,9 +96,14 @@ public class StandardMissile : MonoBehaviour
 
     private void Detonate()
     {
+        generalSource.transform.parent = null;
+        generalSource.PlayOneShot(detonateClip);
+        Destroy(generalSource.gameObject, 3f);
+
         explosionShuriken.Play();
         explosionShuriken.transform.parent = null;
         Destroy(explosionShuriken.gameObject, 5f);
+
         velocity = Vector3.zero;
         toHideWhenDetonating.enabled = false;
         Destroy(gameObject);

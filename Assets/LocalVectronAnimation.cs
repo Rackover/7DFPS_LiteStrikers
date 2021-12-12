@@ -28,6 +28,12 @@ public class LocalVectronAnimation : MonoBehaviour
     [SerializeField]
     Dictionary<Weapon.ELoadout, MeshRenderer> loadoutsWeaps = new Dictionary<Weapon.ELoadout, MeshRenderer>();
 
+    [SerializeField]
+    AudioSource windSource;
+
+    [SerializeField]
+    AudioSource burnerSource;
+
     Color lowSpeedColor = new Color(1f, 1f, 1f, 0f);
 
     float shurikenSpeed;
@@ -51,12 +57,17 @@ public class LocalVectronAnimation : MonoBehaviour
             Destroy(visualToHide.GetComponentInChildren<Rigidbody>());
             Destroy(collisions);
             Destroy(visualToHide.GetComponentInChildren<Collider>());
-            Destroy(this); // script
+            Destroy(windSource);
         }
     }
 
     private void Collisions_onColliderEnter(Collision obj)
     {
+        if (!player.IsLocal)
+        {
+            return;
+        }
+
         if (obj.gameObject.GetComponent<StandardMissile>()) return;
         
         if (player.IsSpawned)
@@ -75,21 +86,54 @@ public class LocalVectronAnimation : MonoBehaviour
         else if (!player.IsSpawned && visualToHide.activeSelf)
         {
             visualToHide.SetActive(false);
+            if (windSource != null) windSource.Stop();
+            burnerSource.Stop();
+        }
+
+        if (speedLinesShuriken)
+        {
+            var emission = speedLinesShuriken.main;
+
+            if (player.IsSpawned)
+            {
+                emission.startColor = Color.Lerp(lowSpeedColor, highSpeedColor, player.movement.SpeedAmount);
+                emission.startSpeedMultiplier = player.movement.SpeedAmount * shurikenSpeed;
+
+                speedLinesShuriken.transform.localEulerAngles = Vector3.up * (180f + 20f * playerMovement.VirtualJoystick.x) + Vector3.right * (20f * playerMovement.VirtualJoystick.y);
+            }
+            else
+            {
+                emission.startSpeedMultiplier = 0f;
+            }
         }
 
         if (player.IsSpawned)
         {
-            var emission = speedLinesShuriken.main;
-            emission.startColor = Color.Lerp(lowSpeedColor, highSpeedColor, player.movement.SpeedAmount);
-            emission.startSpeedMultiplier = player.movement.SpeedAmount* shurikenSpeed;
+            if (player.IsLocal)
+            {
+                if (!windSource.isPlaying)
+                {
+                    windSource.Play();
+                }
 
-            speedLinesShuriken.transform.localEulerAngles = Vector3.up * (180f + 20f * playerMovement.VirtualJoystick.x) + Vector3.right * (20f * playerMovement.VirtualJoystick.y); 
+                windSource.volume = Mathf.Clamp01(playerMovement.VelocityWithGravityMagnitude / 60f)* 0.3f;
+                windSource.pitch = playerMovement.VelocityWithGravityMagnitude / 60f;
+            }
+
+            if (!burnerSource.isPlaying)
+            {
+                burnerSource.Play();
+            }
+
+            burnerSource.volume = playerMovement.SpeedAmount * 0.4f;
+            burnerSource.pitch = playerMovement.SpeedAmount * (Mathf.Abs(playerMovement.Pitch101) * 0.25f + 0.75f); // trying something
         }
     }
 
     void UpdateLoadout()
     {
-        foreach(var loadout in loadoutsWeaps.Keys)
+
+        foreach (var loadout in loadoutsWeaps.Keys)
         {
             if(loadout == player.weapon.Loadout)
             {
@@ -111,6 +155,11 @@ public class LocalVectronAnimation : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
+        if (!player.IsLocal)
+        {
+            return;
+        }
+
         if (player.IsSpawned)
         {
             var localPos = player.transform.InverseTransformPoint(transform.position);
