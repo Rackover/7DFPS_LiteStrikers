@@ -21,6 +21,8 @@ public class Game : MonoBehaviour
 
     public float killZ;
 
+    public bool IsConnected { get; private set; }
+
     [SerializeField] private MeshRenderer[] waterPlanes;
     [SerializeField] private bool forceMobile;
     [SerializeField] private GameObject playerPrefab;
@@ -182,7 +184,18 @@ public class Game : MonoBehaviour
                 yield return new WaitForSeconds(4f);
                 continue;
             }
+            else
+            {
+                if (IsConnected)
+                {
+                    DestroyAllPlayers();
+                }
 
+                IsConnected = false;
+            }
+
+            websocket?.CancelConnection();
+            var _ = websocket?.Close();
             InitWebSock();
             Debug.Log($"Waiting for connection");
             yield return new WaitForSeconds(4f);
@@ -203,6 +216,8 @@ public class Game : MonoBehaviour
         websocket = new WebSocket(addr);
         websocket.OnOpen += () =>
         {
+            Debug.Log($"Connected!!");
+            IsConnected = true;
             connectionState = E_ConnectionState.OK;
         };
 
@@ -264,11 +279,6 @@ public class Game : MonoBehaviour
         Players.Add(player);
 
         return player;
-    }
-
-    public void SpawnPlayer(int id)
-    {
-        // todo !
     }
 
     public void DestroyAllPlayers()

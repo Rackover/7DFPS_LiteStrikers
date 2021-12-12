@@ -27,60 +27,84 @@ public class Menu : MonoBehaviour
 
     bool isAnimating = false;
 
-    bool hasSpawnedOnce = false;
+    bool hasSpawnedOnce => Game.i.LocalPlayer && Game.i.LocalPlayer.WasSpawnedOnce;
 
     bool isWaitingOnServer = false;
-    
-    
+
+    private Vector2 titleBasePosition;
+
+    public static event System.Action OnReset;
+
+    public static void ResetMenu()
+    {
+        OnReset?.Invoke();
+    }
+
     void Start()
     {
-        if (Game.i.IsMobile)
-        {
-            holdClickText.text = @"TOUCH ANYWHERE TO BEGIN";
-        }
-        else
-        {
-            holdClickText.text = @"CLICK ANYWHERE TO BEGIN";
-        }
+        titleBasePosition = title.position;
 
+        Menu_OnReset();
+
+        OnReset += Menu_OnReset;
+    }
+
+    private void Menu_OnReset()
+    {
+        holdAccumulator = 0f;
+        isAtInitialStep = true;
+        title.position = titleBasePosition;
         mouseCursor.color = new Color(1f, 1f, 1f, 0f);
         accumulatorRectangle.color = new Color(1f, 1f, 1f, 0f);
     }
 
     void Update()
     {
-        if (Game.i.LocalPlayer == null) return;
 
-        if (Game.i.LocalPlayer.IsSpawned)
+        canvas.enabled = !Game.i.IsConnected || !Game.i.LocalPlayer.IsSpawned;
+
+        if (hasSpawnedOnce && Game.i.LocalPlayer.IsSpawned && isWaitingOnServer)
         {
-            if (isWaitingOnServer)
-            {
-                hasSpawnedOnce = true;
-            }
-
             holdAccumulator = 0f;
             isWaitingOnServer = false;
         }
 
-        canvas.enabled = !Game.i.LocalPlayer.IsSpawned;
 
         if (canvas.enabled == false) return;
 
-        holdClickText.alpha = Mathf.Clamp01(Mathf.Floor((Time.time * ( isAnimating ? 4f : (isAtInitialStep ? 1f : 8f))) % 2f));
+        holdClickText.alpha = Mathf.Clamp01(Mathf.Floor((Time.time * (isAnimating ? 4f : (isAtInitialStep ? 1f : 8f))) % 2f));
 
         if (isAnimating)
         {
+            holdClickText.color = Color.yellow;
             holdClickText.text = "WAIT...";
+        }
+
+        if (!Game.i.IsConnected)
+        {
+            holdClickText.color = Color.yellow;
+            holdClickText.text = "CONNECTING TO SERVER...";
         }
 
         if (isWaitingOnServer) { return; }
 
         Cursor.visible = true;
 
+        if (!Game.i.IsConnected) { return; }
+
         if (isAnimating) return;
 
         if (isAtInitialStep)
         {
+            if (Game.i.IsMobile)
+            {
+                holdClickText.text = @"TOUCH ANYWHERE TO BEGIN";
+            }
+            else
+            {
+                holdClickText.text = @"CLICK ANYWHERE TO BEGIN";
+            }
+
             if (Game.i.IsPressing)
             {
                 isAtInitialStep = false;
@@ -96,9 +120,8 @@ public class Menu : MonoBehaviour
         {
             bool isValid = Game.i.IsPressing;
 
-            accumulatorRectangle.rectTransform.sizeDelta = Vector2.one * 400f * (1f - holdAccumulator / maxHold);
+            accumulatorRectangle.rectTransform.sizeDelta = Vector2.one * 400f * (1f - holdAccumulator / maxHold) + (Game.i.IsPressing ? Vector2.zero : Vector2.one * 10f * Mathf.Sin(Time.time * 10f));
             accumulatorRectangle.rectTransform.localEulerAngles = Vector3.forward * 180f * (holdAccumulator / maxHold);
-
 
             if (isValid)
             {
@@ -120,7 +143,7 @@ public class Menu : MonoBehaviour
 
             if (hasSpawnedOnce)
             {
-                holdClickText.text = (Game.i.LocalPlayer.lastLocalKiller == Game.i.LocalPlayer.id ? "SELF-DESTRUCT! " :  $"ELIMINATED BY {Game.i.GetNameForId(Game.i.LocalPlayer.lastLocalKiller).ToUpper()} ") + $"{(Game.i.IsMobile ? "TOUCH" : "CLICK")} CENTER AND HOLD FIRMLY";
+                holdClickText.text = (Game.i.LocalPlayer.lastLocalKiller == Game.i.LocalPlayer.id ? "SELF-DESTRUCT! " : $"ELIMINATED BY {Game.i.GetNameForId(Game.i.LocalPlayer.lastLocalKiller).ToUpper()} ") + $"{(Game.i.IsMobile ? "TOUCH" : "CLICK")} CENTER AND HOLD FIRMLY";
             }
             else
             {

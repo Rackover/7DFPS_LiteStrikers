@@ -32,7 +32,7 @@ public class FallbackCamera : MonoBehaviour
 
     void PlaceCamera()
     {
-        bool active = Game.i.LocalPlayer && !Game.i.LocalPlayer.IsSpawned;
+        bool active = !Game.i.IsConnected || !Game.i.LocalPlayer || (!Game.i.LocalPlayer.IsSpawned && !Game.i.LocalPlayer.WasSpawnedOnce);
 
         listener.enabled = active;
         camera.enabled = active;

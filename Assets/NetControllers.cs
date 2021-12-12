@@ -35,23 +35,32 @@ public class NetControllers : Dictionary<string, Action<NativeWebSocket.WebSocke
     void ReceivePlayerUpdate(NativeWebSocket.WebSocket ws, string data)
     {
         var playerUpdate = JsonConvert.DeserializeObject<Client>(data);
-        var player = Game.i.GetPlayerById(playerUpdate.id);
-        var move = new DeserializedPlayerMove(playerUpdate.position, playerUpdate.rotation);
+        ReceivePlayerUpdate(playerUpdate);
+    }
+
+    void ReceivePlayerUpdate(Client client)
+    {
+        var player = Game.i.GetPlayerById(client.id);
+        var move = new DeserializedPlayerMove(client.position, client.rotation);
         if (player == null)
         {
-            Debug.Log("Adding new unknown player " + playerUpdate.id);
-            player = Game.i.AddPlayer(playerUpdate.id, move.position, move.rotation, isLocal: false);
+            Debug.Log("Adding new unknown player " + client.id);
+            player = Game.i.AddPlayer(client.id, move.position, move.rotation, isLocal: false);
         }
 
-        player.SetLoadout(playerUpdate.loadout);
+        player.SetLoadout(client.loadout);
         // SetColor
 
-        if (!player.IsSpawned && playerUpdate.isSpawned)
+        if (!player.IsSpawned && client.isSpawned)
         {
-            Debug.Log("Spawning player " + player.id +" at "+move.position);
+            Debug.Log("Spawning player " + player.id + " at " + move.position);
             player.transform.position = move.position;
             player.transform.LookAt(Vector3.zero);
             player.Spawn();
+        }
+        else if (player.IsSpawned && !client.isSpawned)
+        {
+            player.Eliminate();
         }
     }
 
@@ -97,7 +106,23 @@ public class NetControllers : Dictionary<string, Action<NativeWebSocket.WebSocke
 
     void UpdateScores(NativeWebSocket.WebSocket ws, string data) {
         var state = JsonConvert.DeserializeObject<ScoreInfo>(data);
-        Game.i.SetScore(state.clientId, state.newScore);
+
+        if (state.scores != null)
+        {
+            foreach (var k in state.scores.Keys)
+            {
+                Game.i.SetScore(k, state.scores[k]);
+            }
+        }
+
+        if (state.playerUpdates != null)
+        {
+            for (int i = 0; i < state.playerUpdates.Length; i++)
+            {
+                var pu = state.playerUpdates[i];
+                ReceivePlayerUpdate(pu);
+            }
+        }
     }
 
     void InitializeState(NativeWebSocket.WebSocket ws, string data) {
@@ -130,9 +155,9 @@ public class NetControllers : Dictionary<string, Action<NativeWebSocket.WebSocke
     }
 
     [Serializable]
-    public class ScoreInfo {
-        public int newScore = 1;
-        public int clientId = -1;
+    public struct ScoreInfo {
+        public Dictionary<int, int> scores;
+        public Client[] playerUpdates;
     }
 
     [Serializable]

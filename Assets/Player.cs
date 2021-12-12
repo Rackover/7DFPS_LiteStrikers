@@ -7,6 +7,8 @@ public class Player : MonoBehaviour {
 
     public bool IsSpawned { get; private set; } = false;
 
+    public bool WasSpawnedOnce { private set; get; } = false;
+
     public bool IsRadarVisible => IsSpawned && (movement.IsBoosting || movement.SpeedAmount > 0.5f);
 
     public AudioSource source;
@@ -29,12 +31,16 @@ public class Player : MonoBehaviour {
     public int lastLocalKiller;
 
     [SerializeField]
+    private ParticleSystem eliminationParticleSystem;
+
+    [SerializeField]
     private TrailRenderer trailRenderer;
 
     NetControllers.DeserializedPlayerMove previousMovement;
     NetControllers.DeserializedPlayerMove targetMovement;
 
     float timer = 0f;
+    float deathTime = 0f;
 
     private void Awake() {
     }
@@ -65,12 +71,20 @@ public class Player : MonoBehaviour {
     {
         if (IsSpawned) Debug.LogError("?? Spawned me twice?");
 
+        WasSpawnedOnce = true;
+
         IsSpawned = true;
 
     }
 
     public void Eliminate()
     {
+        if (IsSpawned)
+        {
+            eliminationParticleSystem?.Play();
+            deathTime = Time.time;
+        }
+
         IsSpawned = false;
     }
 
@@ -82,7 +96,17 @@ public class Player : MonoBehaviour {
     private void Update() {
         name = $"{(IsSpawned ? "[ACTIVE]" : "[WAITING]")} {(IsLocal ? "LOCAL_" : "")}{id}_{weapon.Loadout}";
 
-        if (IsLocal) return;
+        if (IsLocal)
+        {
+            if (WasSpawnedOnce && !IsSpawned && !Game.i.IsPressing && deathTime < Time.time - 6f )
+            {
+                Menu.ResetMenu();
+                WasSpawnedOnce = false;
+            }
+
+            return;
+        }
+
 
         // ONLINE ONLY (Remote client)
         timer += Time.deltaTime * catchUpSpeed;

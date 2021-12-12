@@ -9,7 +9,7 @@ const server = createServer(app);
 const wss = new WebSocket.Server({ server });
 
 const port = 1235;
-const arenaSize = 500;
+const arenaSize = 700;
 const dropAckTimeout = 1;
 const spawnDistance = 50;
 

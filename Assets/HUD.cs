@@ -54,9 +54,7 @@ public class HUD : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Game.i.LocalPlayer == null) return;
-
-        canvas.enabled = Game.i.LocalPlayer.IsSpawned;
+        canvas.enabled = Game.i.IsConnected && Game.i.LocalPlayer && Game.i.LocalPlayer.IsSpawned;
 
         if (canvas.enabled == false) return;
         

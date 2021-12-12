@@ -42,7 +42,8 @@ public class PlayerCamera : MonoBehaviour {
     // Update is called once per frame
     void Update() 
     {
-        listener.enabled = player.IsSpawned;
+        listener.enabled = player.IsSpawned || player.WasSpawnedOnce;
+        camera.enabled = player.IsSpawned || player.WasSpawnedOnce;
 
         if (player.IsSpawned)
         {
@@ -61,6 +62,12 @@ public class PlayerCamera : MonoBehaviour {
             blur.blurAmount = Mathf.Lerp(1f, 0.3f, delta);
 
             colorCorrection.saturation = Mathf.Lerp(0.2f, 1f, delta);
+        }
+        else if (player.WasSpawnedOnce)
+        {
+            // Deadcam
+            blur.blurAmount = 1f;
+            colorCorrection.saturation = 0f;
         }
     }
 }

@@ -33,6 +33,8 @@ public class PlayerMovement : MonoBehaviour
 
     public bool IsLocal => playerScript.IsLocal;
 
+    public bool WasSpawnedOnce => playerScript.WasSpawnedOnce;
+
     Vector3 velocity = Vector3.zero;
 
     float verticalGravityVelocity = 0f;
